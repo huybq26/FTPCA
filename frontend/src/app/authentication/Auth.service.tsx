@@ -34,11 +34,11 @@ export default class AuthService {
 	}
 
 	public static loginUser(
-		identifier: string,
+		username: string,
 		rawPassword: string
 	): Record<string, string> {
 		// return the boolean-type function login check from the backend
-		// note that the function should be able to check username, phoneNumber or email using the identifier
+		// note that the function should be able to check username's password from database
 
 		if (AuthService._requestResult.success == 'true') {
 			let username: string = '';

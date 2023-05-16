@@ -70,6 +70,10 @@ export const SignUp: React.FC<SignUpProps> = ({ onChoiceUpdate }) => {
 		console.log(user);
 		if (result.success == 'true') {
 			navigate('/landing');
+		} else {
+			window.alert(
+				'Sorry, we have some problems signing you up. Please try again later.'
+			);
 		}
 	};
 

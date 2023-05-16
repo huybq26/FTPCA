@@ -13,6 +13,8 @@ import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import AuthService from './Auth.service';
+import User from '../../user/user';
+import { useNavigate } from 'react-router-dom';
 
 function Copyright(props: any) {
 	return (
@@ -38,8 +40,32 @@ type SignInProps = {
 	onChoiceUpdate: (newChoice: 'signIn' | 'signUp') => void;
 };
 export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
-	const loginUser = (identifier: string, rawPassword: string): object => {
-		return AuthService.loginUser(identifier, rawPassword);
+	const navigate = useNavigate();
+
+	const loginUser = (event: React.FormEvent<HTMLFormElement>): void => {
+		const data = new FormData(event.currentTarget);
+		let username: string = (data.get('username') as string) ?? '';
+		let rawPassword: string = (data.get('password') as string) ?? '';
+
+		console.log('Data signing in: ');
+		console.log({
+			username: username,
+			rawPassword: rawPassword,
+		});
+
+		let result = AuthService.loginUser(username, rawPassword);
+
+		console.log('Result of signing in is: ' + result.success);
+		let user: User = AuthService.user;
+		console.log(user);
+
+		if (result.success == 'true') {
+			navigate('/landing');
+		} else {
+			window.alert(
+				'Sorry, we have some problems signing you up. Please try again later.'
+			);
+		}
 	};
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
@@ -79,10 +105,10 @@ export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
 							margin='normal'
 							required
 							fullWidth
-							id='email'
-							label='Email Address'
-							name='email'
-							autoComplete='email'
+							id='username'
+							label='Username'
+							name='username'
+							autoComplete='Username'
 							autoFocus
 						/>
 						<TextField
