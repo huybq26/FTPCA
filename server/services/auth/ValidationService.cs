@@ -5,22 +5,29 @@
 // using var reader = command.ExecuteReader();
 // while (reader.Read())
 //     Console.WriteLine(reader.GetString(0));
+using DatabaseGroup;
+using PasswordHashingServiceGroup;
 
-namespace ValidationService
+namespace ValidationServiceGroup
 {
     public class ValidationService
     {
 
 
-        public static Boolean checkValidRegistrationInput(string username)
+        public static async Task<Boolean> checkValidRegistrationInput(string username)
         {
             // simply check if the username has existed or not from the database
-            return true;
+
+            int count = await Database.CountOccurrence("username", username);
+            return count == 0;
         }
-        public static Boolean checkValidLoginInput(string username, string password)
+        public static async Task<Boolean> checkValidLoginInput(string username, string password)
         {
             // check if the password matches with the username's password from the database
-            return false;
+            // Console.WriteLine("Hashed Password from Database is: " + Database.GetDetailsFromUsername.get(0).get(5));
+            // Console.WriteLine("Provided hashed password is: " + PasswordHashingService.Encrypt(password));
+            List<string> databasePassword = await Database.GetDetailsFromUsername(username);
+            return databasePassword[5] == PasswordHashingService.Encrypt(password);
         }
 
     }

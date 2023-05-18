@@ -1,7 +1,24 @@
 using MySql.Data.MySqlClient;
-using DatabaseInitGroup;
+using DatabaseGroup;
 var builder = WebApplication.CreateBuilder(args);
 var app = builder.Build();
+
+app.MapGet("/", () => "Hello World!");
+// Route handler
+app.MapGet("/initdb", async (context) =>
+{
+    // Call the Init method
+    MySqlConnection connection = await DbConnection.GetDbConnection();
+    await Database.Init(connection);
+
+    // Return a response
+    await context.Response.WriteAsync("Database initialization completed.");
+});
+
+
+app.Run();
+
+
 // using var connection = new MySqlConnection("Server=localhost;User ID=huybq;Password=Qwerty26!;Database=FTPCA");
 
 // static async Task Init()
@@ -34,17 +51,4 @@ var app = builder.Build();
 //     // }
 // }
 
-app.MapGet("/", () => "Hello World!");
-// Route handler
-app.MapGet("/initdb", async (context) =>
-{
-    // Call the Init method
-    MySqlConnection connection = await DbConnection.GetDbConnection();
-    await DatabaseInit.Init(connection);
 
-    // Return a response
-    await context.Response.WriteAsync("Database initialization completed.");
-});
-
-
-app.Run();

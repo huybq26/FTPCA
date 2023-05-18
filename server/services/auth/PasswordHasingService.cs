@@ -1,5 +1,5 @@
 using BCr = BCrypt.Net;
-namespace PasswordHashingService
+namespace PasswordHashingServiceGroup
 {
     public static class PasswordHashingService
     {
