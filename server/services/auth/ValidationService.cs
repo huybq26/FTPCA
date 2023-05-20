@@ -27,7 +27,10 @@ namespace ValidationServiceGroup
             // Console.WriteLine("Hashed Password from Database is: " + Database.GetDetailsFromUsername.get(0).get(5));
             // Console.WriteLine("Provided hashed password is: " + PasswordHashingService.Encrypt(password));
             List<string> databasePassword = await Database.GetDetailsFromUsername(username);
-            return databasePassword[5] == PasswordHashingService.Encrypt(password);
+            Console.WriteLine(string.Join(", ", databasePassword));
+            Console.WriteLine(PasswordHashingService.Encrypt(password));
+            return PasswordHashingService.Validate(password, databasePassword[5]);
+            // return databasePassword[5] == PasswordHashingService.Encrypt(password);
         }
 
     }

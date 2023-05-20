@@ -9,7 +9,7 @@ namespace AccountServiceGroup
     {
         private User user;
 
-        public async Task<Boolean> registerUser(string username, string phoneNumber, string email, string name, string password)
+        public static async Task<Boolean> registerUser(string username, string phoneNumber, string email, string name, string hashedPassword)
         {
             if (!await ValidationService.checkValidRegistrationInput(username))
             {
@@ -17,12 +17,12 @@ namespace AccountServiceGroup
             }
             else
             {
-                await Database.registerUser(username, phoneNumber, email, name, PasswordHashingService.Encrypt(password));
+                await Database.registerUser(username, phoneNumber, email, name, hashedPassword);
                 return true;
             }
         }
 
-        public async Task<Boolean> loginUser(string username, string password)
+        public static async Task<Boolean> loginUser(string username, string password)
         {
             if (!await ValidationService.checkValidLoginInput(username, password))
             {
@@ -36,14 +36,29 @@ namespace AccountServiceGroup
 
         public void logoutUser(string username) { }
 
-        public async void changePassword(string username, string newPassword)
+        public static async void changePassword(string username, string newPassword)
         {
             await Database.changePassword(username, newPassword);
         }
 
-        public async void updateDetails(string username, string phoneNumber, string email, string name)
+        public static async void updateDetails(string username, string phoneNumber, string email, string name)
         {
             await Database.updateDetails(username, phoneNumber, email, name);
         }
+
+        public static async Task<User> GetUserFromUsername(string username)
+        {
+            List<string> list = await Database.GetDetailsFromUsername(username);
+            return new User
+            {
+                Userid = list[0],
+                Username = list[1],
+                PhoneNumber = list[2],
+                Email = list[3],
+                Name = list[4],
+                HashedPassword = list[5]
+            };
+        }
+
     }
 }

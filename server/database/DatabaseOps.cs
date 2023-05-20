@@ -51,19 +51,20 @@ namespace DatabaseGroup
         {
             List<string> list = new List<string>();
 
-            using var selectCommand = new MySqlCommand("SELECT * FROM User WHERE username = @value", Database.connection);
+            using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, email, name, hashedpassword FROM User WHERE username = @value", Database.connection);
             selectCommand.Parameters.AddWithValue("@value", username);
 
             using var reader = await selectCommand.ExecuteReaderAsync();
             while (await reader.ReadAsync())
             {
-                for (int i = 0; i < reader.FieldCount; i++)
+                list.Add(reader.GetInt32(0).ToString());
+                for (int i = 1; i < reader.FieldCount; i++)
                 {
                     list.Add(reader.GetString(i));
                 }
             }
 
-            Console.WriteLine(string.Join(", ", list));
+            // Console.WriteLine(string.Join(", ", list));
 
             return list;
         }

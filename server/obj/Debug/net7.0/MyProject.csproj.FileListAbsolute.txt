@@ -58,3 +58,17 @@
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/obj/Debug/net7.0/MyProject.pdb
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/obj/Debug/net7.0/MyProject.genruntimeconfig.cache
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/obj/Debug/net7.0/ref/MyProject.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.AspNetCore.Authentication.JwtBearer.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.AspNetCore.Identity.EntityFrameworkCore.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.IdentityModel.Abstractions.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.IdentityModel.JsonWebTokens.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.IdentityModel.Logging.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.IdentityModel.Protocols.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.IdentityModel.Protocols.OpenIdConnect.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.IdentityModel.Tokens.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Microsoft.OpenApi.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Swashbuckle.AspNetCore.Swagger.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Swashbuckle.AspNetCore.SwaggerGen.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Swashbuckle.AspNetCore.SwaggerUI.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/System.IdentityModel.Tokens.Jwt.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/obj/Debug/net7.0/MyProject.MvcApplicationPartsAssemblyInfo.cs
