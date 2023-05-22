@@ -39,71 +39,277 @@ namespace DatabaseGroup
 
         public static async Task<int> CountOccurrence(string field, string value)
         {
-            using var selectCommand = new MySqlCommand("SELECT COUNT(*) FROM User WHERE " + field + " = @value", Database.connection);
-            selectCommand.Parameters.AddWithValue("@value", value);
+            try
+            {
+                using var selectCommand = new MySqlCommand("SELECT COUNT(*) FROM User WHERE " + field + " = @value", Database.connection);
+                selectCommand.Parameters.AddWithValue("@value", value);
 
-            int rowCount = Convert.ToInt32(await selectCommand.ExecuteScalarAsync());
-            Console.WriteLine($"Number of rows: {rowCount}");
-            return rowCount;
+                int rowCount = Convert.ToInt32(await selectCommand.ExecuteScalarAsync());
+                Console.WriteLine($"Number of rows: {rowCount}");
+                return rowCount;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
         }
 
         public static async Task<List<string>> GetDetailsFromUsername(string username)
         {
-            List<string> list = new List<string>();
-
-            using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, email, name, hashedpassword FROM User WHERE username = @value", Database.connection);
-            selectCommand.Parameters.AddWithValue("@value", username);
-
-            using var reader = await selectCommand.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
+            try
             {
-                list.Add(reader.GetInt32(0).ToString());
-                for (int i = 1; i < reader.FieldCount; i++)
+                List<string> list = new List<string>();
+
+                using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, email, name, hashedpassword FROM User WHERE username = @value", Database.connection);
+                selectCommand.Parameters.AddWithValue("@value", username);
+
+                using var reader = await selectCommand.ExecuteReaderAsync();
+                while (await reader.ReadAsync())
                 {
-                    list.Add(reader.GetString(i));
+                    list.Add(reader.GetInt32(0).ToString());
+                    for (int i = 1; i < reader.FieldCount; i++)
+                    {
+                        list.Add(reader.GetString(i));
+                    }
+                }
+
+                // Console.WriteLine(string.Join(", ", list));
+
+                return list;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
+        }
+
+        public static async Task<string> getUsernameFromId(int id)
+        {
+            try
+            {
+                using var selectCommand = new MySqlCommand("SELECT username FROM User WHERE userid = @value", Database.connection);
+                selectCommand.Parameters.AddWithValue("@value", id);
+
+                using var reader = await selectCommand.ExecuteReaderAsync();
+                if (await reader.ReadAsync())
+                {
+                    return reader.GetString(0);
+                }
+                else
+                {
+                    // Handle the case when no rows are returned
+                    // For example, return null or throw an exception
+                    // Likely where the user account is deleted
+                    return null;
                 }
             }
-
-            // Console.WriteLine(string.Join(", ", list));
-
-            return list;
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
         }
 
         public static async Task registerUser(string username, string phoneNumber, string email, string name, string hashedPassword)
         {
-            using var insertCommand = new MySqlCommand("INSERT INTO User (username, phonenumber, email, name, hashedpassword) VALUES (@username, @phonenumber, @email, @name, @hashedpassword)", Database.connection);
+            try
+            {
+                using var insertCommand = new MySqlCommand("INSERT INTO User (username, phonenumber, email, name, hashedpassword) VALUES (@username, @phonenumber, @email, @name, @hashedpassword)", Database.connection);
 
-            insertCommand.Parameters.AddWithValue("@username", username);
-            insertCommand.Parameters.AddWithValue("@phonenumber", phoneNumber);
-            insertCommand.Parameters.AddWithValue("@email", email);
-            insertCommand.Parameters.AddWithValue("@name", name);
-            insertCommand.Parameters.AddWithValue("@hashedpassword", hashedPassword);
+                insertCommand.Parameters.AddWithValue("@username", username);
+                insertCommand.Parameters.AddWithValue("@phonenumber", phoneNumber);
+                insertCommand.Parameters.AddWithValue("@email", email);
+                insertCommand.Parameters.AddWithValue("@name", name);
+                insertCommand.Parameters.AddWithValue("@hashedpassword", hashedPassword);
 
-            await insertCommand.ExecuteNonQueryAsync();
+                await insertCommand.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
         }
 
         public static async Task changePassword(string username, string newHashedPassword)
         {
-            using var insertCommand = new MySqlCommand("UPDATE User SET hashedpassword=@hashedpassword WHERE username=@username", Database.connection);
+            try
+            {
+                using var insertCommand = new MySqlCommand("UPDATE User SET hashedpassword=@hashedpassword WHERE username=@username", Database.connection);
 
-            insertCommand.Parameters.AddWithValue("@username", username);
-            insertCommand.Parameters.AddWithValue("@hashedpassword", newHashedPassword);
+                insertCommand.Parameters.AddWithValue("@username", username);
+                insertCommand.Parameters.AddWithValue("@hashedpassword", newHashedPassword);
 
-            await insertCommand.ExecuteNonQueryAsync();
+                await insertCommand.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
         }
 
         public static async Task updateDetails(string username, string phoneNumber, string email, string name)
         {
-            using var insertCommand = new MySqlCommand("UPDATE User SET phoneNumber=@phonenumber, email=@email, name=@name WHERE username=@username", Database.connection);
+            try
+            {
+                using var insertCommand = new MySqlCommand("UPDATE User SET phoneNumber=@phonenumber, email=@email, name=@name WHERE username=@username", Database.connection);
 
-            insertCommand.Parameters.AddWithValue("@username", username);
-            insertCommand.Parameters.AddWithValue("@phonenumber", phoneNumber);
-            insertCommand.Parameters.AddWithValue("@email", email);
-            insertCommand.Parameters.AddWithValue("@name", name);
+                insertCommand.Parameters.AddWithValue("@username", username);
+                insertCommand.Parameters.AddWithValue("@phonenumber", phoneNumber);
+                insertCommand.Parameters.AddWithValue("@email", email);
+                insertCommand.Parameters.AddWithValue("@name", name);
 
-            await insertCommand.ExecuteNonQueryAsync();
+                await insertCommand.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
         }
 
+        public static async Task<List<string>> SearchFriends(string term)
+        {
+            try
+            {
+                List<string> results = new List<string>();
+                using var selectCommand = new MySqlCommand("SELECT username FROM User WHERE username LIKE @value OR phonenumber LIKE @value OR email LIKE @value OR name LIKE @value", Database.connection);
+
+                selectCommand.Parameters.AddWithValue("@value", "%" + term + "%");
+                using var reader = await selectCommand.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        results.Add(reader.GetString(i));
+                    }
+                }
+
+                Console.WriteLine(string.Join(", ", results));
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
+        }
+
+        public static async Task AddFriendRequest(int senderid, int receiverid)
+        {
+            try
+            {
+                using var insertCommand = new MySqlCommand("INSERT INTO FriendRequest(senderid, receiverid) VALUES(@senderid, @receiverid)", Database.connection);
+                insertCommand.Parameters.AddWithValue("@senderid", senderid);
+                insertCommand.Parameters.AddWithValue("@receiverid", receiverid);
+
+                await insertCommand.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
+        }
+
+
+        public static async Task acceptFriendRequest(int senderid, int receiverid)
+        {
+            using var transaction = Database.connection.BeginTransaction();
+
+            try
+            {
+                using var insertCommand = new MySqlCommand("INSERT INTO Friendship(senderid, receiverid) VALUES(@senderid, @receiverid)", transaction.Connection);
+                insertCommand.Parameters.AddWithValue("@senderid", senderid);
+                insertCommand.Parameters.AddWithValue("@receiverid", receiverid);
+
+                await insertCommand.ExecuteNonQueryAsync();
+
+                using var deleteCommand = new MySqlCommand("DELETE FROM FriendRequest WHERE senderid = @senderid AND receiverid = @receiverid", transaction.Connection);
+                deleteCommand.Parameters.AddWithValue("@senderid", senderid);
+                deleteCommand.Parameters.AddWithValue("@receiverid", receiverid);
+
+                await deleteCommand.ExecuteNonQueryAsync();
+
+                // Commit the transaction if both insert and delete are successful
+                transaction.Commit();
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions and roll back the transaction
+                Console.WriteLine("An error occurred: " + ex.Message);
+                transaction.Rollback();
+            }
+        }
+
+        public static async Task rejectFriendRequest(int senderid, int receiverid)
+        {
+            try
+            {
+                using var deleteCommand = new MySqlCommand("DELETE FROM FriendRequest WHERE senderid = @senderid AND receiverid = @receiverid", transaction.Connection);
+                deleteCommand.Parameters.AddWithValue("@senderid", senderid);
+                deleteCommand.Parameters.AddWithValue("@receiverid", receiverid);
+
+                await deleteCommand.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
+        }
+
+        public static async Task<List<string>> queryFriendRequest(int userid)
+        {
+            try
+            {
+                List<string> results = new List<string>();
+                using var selectCommand = new MySqlCommand("SELECT senderid FROM FriendRequest WHERE receiverid = @receiverid", Database.connection);
+
+                selectCommand.Parameters.AddWithValue("@receiverid", userid);
+                using var reader = await selectCommand.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        int senderid = reader.GetInt32(i);
+                        string username = await getUsernameFromId(senderid);
+                        results.Add(username);
+                    }
+                }
+
+                Console.WriteLine(string.Join(", ", results));
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+                throw;
+            }
+        }
+
+        // public static async Task<List<string>> listAllFriends(int userid){
+
+        // }
+
+        // public static async Task deleteExistingFriend(int userid, int friendid){
+
+        // }
     }
 
     public class DbConnection

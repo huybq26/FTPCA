@@ -52,27 +52,30 @@ export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
 			username: username,
 			rawPassword: rawPassword,
 		});
-
-		let result = AuthService.loginUser(username, rawPassword);
-
-		console.log('Result of signing in is: ' + result.success);
-		let user: User = AuthService.user;
-		console.log(user);
-
-		if (result.success == 'true') {
-			navigate('/landing');
-		} else {
-			window.alert(
-				'Sorry, we have some problems signing you up. Please try again later.'
-			);
+		try {
+			AuthService.loginUser(username, rawPassword);
+		} catch (error) {
+			console.log(error);
 		}
+
+		// console.log('Result of signing in is: ' + result.success);
+		// let user: User = AuthService.user;
+		// console.log(user);
+
+		// if (result.success == 'true') {
+		// 	navigate('/landing');
+		// } else {
+		// 	window.alert(
+		// 		'Sorry, we have some problems signing you up. Please try again later.'
+		// 	);
+		// }
 	};
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
 		const data = new FormData(event.currentTarget);
 		console.log({
-			email: data.get('email'),
+			username: data.get('username'),
 			password: data.get('password'),
 		});
 	};
@@ -95,12 +98,7 @@ export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
 					<Typography component='h1' variant='h5'>
 						Sign in
 					</Typography>
-					<Box
-						component='form'
-						onSubmit={handleSubmit}
-						noValidate
-						sx={{ mt: 1 }}
-					>
+					<Box component='form' onSubmit={loginUser} noValidate sx={{ mt: 1 }}>
 						<TextField
 							margin='normal'
 							required

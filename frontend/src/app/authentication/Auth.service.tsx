@@ -1,8 +1,9 @@
-import HttpService from '../../api/httpService';
+import HttpService, { methodType } from '../../api/httpService';
 import User from '../../user/user';
 
-export default class AuthService {
+export default class AuthService extends HttpService {
 	private static _user: User;
+	private static backendAddress: string = 'http://localhost:5169';
 	private static _requestResult: Record<string, string> = {
 		success: 'true',
 		error: 'none',
@@ -33,31 +34,62 @@ export default class AuthService {
 		return AuthService._requestResult;
 	}
 
-	public static loginUser(
-		username: string,
-		rawPassword: string
-	): Record<string, string> {
+	public static async loginUser(username: string, rawPassword: string) {
 		// return the boolean-type function login check from the backend
 		// note that the function should be able to check username's password from database
 
-		if (AuthService._requestResult.success == 'true') {
-			let username: string = '';
-			let phoneNumber: string = '';
-			let name: string = '';
-			let email: string = '';
-			let hashedPassword: string = '';
-			let token: string = '';
+		// if (AuthService._requestResult.success == 'true') {
+		// 	let username: string = username;
+		// 	let phoneNumber: string = '';
+		// 	let name: string = '';
+		// 	let email: string = '';
+		// 	let hashedPassword: string = '';
+		// 	let token: string = '';
 
-			AuthService._user = new User(
-				username,
-				phoneNumber,
-				name,
-				email,
-				hashedPassword,
-				token
-			);
+		// 	AuthService._user = new User(
+		// 		username,
+		// 		phoneNumber,
+		// 		name,
+		// 		email,
+		// 		hashedPassword,
+		// 		token
+		// 	);
+		// }
+		try {
+			// const response = await this.httpRequest(
+			// 	'/login',
+			// 	methodType.post,
+			// 	{},
+			// 	null,
+			// 	{
+			// 		Username: username,
+			// 		HashedPassword: rawPassword,
+			// 	}
+			// );
+
+			const response = await fetch('http://localhost:5169/login', {
+				method: 'POST',
+				headers: {
+					'Content-Type': 'application/json',
+					Accept: '*/*',
+				},
+				body: JSON.stringify({
+					Username: username,
+					HashedPassword: rawPassword,
+				}),
+			});
+
+			if (response.ok) {
+				const data = await response.json();
+				console.log('Login successful:', data);
+			} else {
+				const error = await response.json();
+				console.log('Login failed:', error);
+			}
+		} catch (error) {
+			console.log(error);
 		}
-		return AuthService._requestResult;
+		// return AuthService._requestResult;
 	}
 
 	public static logoutUser(): Record<string, string> {

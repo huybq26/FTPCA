@@ -10,10 +10,10 @@ export default class HttpService {
 		api: string,
 		method: methodType,
 		headers: Record<string, string>,
-		options: object,
-		content: object
+		options: object | null,
+		content: object | null
 	): Promise<any> {
-		const host = 3000; // fix later to make env
+		const host = 'http://localhost:5169'; // fix later to make env
 		let requestOptions: any = {
 			method: method,
 			headers: { ...headers, 'Content-type': 'application/json' },
