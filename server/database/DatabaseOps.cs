@@ -226,13 +226,13 @@ namespace DatabaseGroup
         }
 
 
-        public static async Task acceptFriendRequest(int senderid, int receiverid)
+        public static async Task AcceptFriendRequest(int senderid, int receiverid)
         {
             using var transaction = Database.connection.BeginTransaction();
 
             try
             {
-                using var insertCommand = new MySqlCommand("INSERT INTO Friendship(senderid, receiverid) VALUES(@senderid, @receiverid)", transaction.Connection);
+                using var insertCommand = new MySqlCommand("INSERT INTO Friendship(userid1, userid2) VALUES(@senderid, @receiverid)", transaction.Connection);
                 insertCommand.Parameters.AddWithValue("@senderid", senderid);
                 insertCommand.Parameters.AddWithValue("@receiverid", receiverid);
 
@@ -255,7 +255,7 @@ namespace DatabaseGroup
             }
         }
 
-        public static async Task rejectFriendRequest(int senderid, int receiverid)
+        public static async Task RejectFriendRequest(int senderid, int receiverid)
         {
             try
             {
@@ -272,7 +272,7 @@ namespace DatabaseGroup
             }
         }
 
-        public static async Task<List<string>> queryFriendRequest(int userid)
+        public static async Task<List<string>> QueryFriendRequest(int userid)
         {
             try
             {
@@ -303,13 +303,65 @@ namespace DatabaseGroup
             }
         }
 
-        // public static async Task<List<string>> listAllFriends(int userid){
+        public static async Task<List<string>> ListAllFriends(int userid)
+        {
+            try
+            {
+                List<string> friendList = new List<string>();  // Fix: Use List<string> instead of List<int>
+                using var selectCommand = new MySqlCommand("SELECT userid1, userid2 FROM Friendship WHERE userid1 = @userid OR userid2 = @userid", Database.connection);
 
-        // }
+                selectCommand.Parameters.AddWithValue("@userid", userid);
+                using var reader = await selectCommand.ExecuteReaderAsync();
 
-        // public static async Task deleteExistingFriend(int userid, int friendid){
+                while (await reader.ReadAsync())
+                {
+                    for (int i = 0; i < reader.FieldCount; i += 2)  // Fix: Increment i by 2 to read two userids at a time
+                    {
+                        int user1 = reader.GetInt32(i);
+                        int user2 = reader.GetInt32(i + 1);
 
-        // }
+                        if (user1 != userid)
+                        {
+                            string username = await GetUsernameFromId(user1);
+                            friendList.Add(username);
+                        }
+                        else if (user2 != userid)
+                        {
+                            string username = await GetUsernameFromId(user2);
+                            friendList.Add(username);
+                        }
+                    }
+                }
+
+                Console.WriteLine(string.Join(", ", friendList));
+
+                return friendList;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
+        }
+
+
+        public static async Task DeleteExistingFriend(int userid, int friendid)
+        {
+            try
+            {
+                using var deleteCommand = new MySqlCommand("DELETE FROM Friendship WHERE (userid1 = @userid AND userid2 = @friendid) OR (userid2 = @userid AND userid1 = @friendid)", transaction.Connection);
+                deleteCommand.Parameters.AddWithValue("@userid", userid);
+                deleteCommand.Parameters.AddWithValue("@friendid", friendid);
+
+                await deleteCommand.ExecuteNonQueryAsync();
+            }
+            catch (Exception ex)
+            {
+
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
+        }
     }
 
     public class DbConnection

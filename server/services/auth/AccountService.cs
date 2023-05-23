@@ -7,7 +7,6 @@ namespace AccountServiceGroup
 {
     public class AccountService
     {
-        private User user;
 
         public static async Task<Boolean> registerUser(string username, string phoneNumber, string email, string name, string hashedPassword)
         {
