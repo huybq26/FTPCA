@@ -257,6 +257,7 @@ namespace DatabaseGroup
 
         public static async Task RejectFriendRequest(int senderid, int receiverid)
         {
+            using var transaction = Database.connection.BeginTransaction();
             try
             {
                 using var deleteCommand = new MySqlCommand("DELETE FROM FriendRequest WHERE senderid = @senderid AND receiverid = @receiverid", transaction.Connection);
@@ -322,12 +323,12 @@ namespace DatabaseGroup
 
                         if (user1 != userid)
                         {
-                            string username = await GetUsernameFromId(user1);
+                            string username = await getUsernameFromId(user1);
                             friendList.Add(username);
                         }
                         else if (user2 != userid)
                         {
-                            string username = await GetUsernameFromId(user2);
+                            string username = await getUsernameFromId(user2);
                             friendList.Add(username);
                         }
                     }
@@ -348,6 +349,7 @@ namespace DatabaseGroup
 
         public static async Task DeleteExistingFriend(int userid, int friendid)
         {
+            using var transaction = Database.connection.BeginTransaction();
             try
             {
                 using var deleteCommand = new MySqlCommand("DELETE FROM Friendship WHERE (userid1 = @userid AND userid2 = @friendid) OR (userid2 = @userid AND userid1 = @friendid)", transaction.Connection);

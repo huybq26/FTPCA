@@ -1,25 +1,42 @@
-import { useLocation } from 'react-router-dom';
-import User from '../../user/user';
-import AuthService from '../authentication/Auth.service';
-// interface LandingPageProps {
-// 	location: {
-// 		state: {
-// 			user: User;
-// 		};
-// 	};
-// }
+import React, { useEffect, useState } from 'react';
+import jwtDecode from 'jwt-decode';
+import { fetchToken } from '../authentication/JwtUtils';
 
-const LandingPage: React.FC = () => {
-	const user: User = AuthService.user;
+interface UserInfo {
+	userid: string;
+	username: string;
+	name: string;
+	email: string;
+	phonenumber: string;
+}
+
+const Landing: React.FC = () => {
+	const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
+
+	useEffect(() => {
+		const user = fetchToken();
+		if (user) {
+			setUserInfo(user);
+			console.log('Stored user info: ');
+			console.log(userInfo);
+		}
+	}, []);
+
 	return (
 		<div>
-			<h1>Welcome to the Landing Page</h1>
-			<p>Username: {user.username}</p>
-			<p>Name: {user.name}</p>
-			<p>Phone Number: {user.phoneNumber}</p>
-			<p>Password: {user.hashedPassword}</p>
+			{userInfo ? (
+				<div>
+					<p>User ID: {userInfo.userid}</p>
+					<p>Username: {userInfo.username}</p>
+					<p>Name: {userInfo.name}</p>
+					<p>Email: {userInfo.email}</p>
+					<p>Phone Number: {userInfo.phonenumber}</p>
+				</div>
+			) : (
+				<p>No user info available</p>
+			)}
 		</div>
 	);
 };
 
-export default LandingPage;
+export default Landing;

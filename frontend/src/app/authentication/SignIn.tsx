@@ -42,7 +42,10 @@ type SignInProps = {
 export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
 	const navigate = useNavigate();
 
-	const loginUser = (event: React.FormEvent<HTMLFormElement>): void => {
+	const loginUser = async (
+		event: React.FormEvent<HTMLFormElement>
+	): Promise<void> => {
+		event.preventDefault();
 		const data = new FormData(event.currentTarget);
 		let username: string = (data.get('username') as string) ?? '';
 		let rawPassword: string = (data.get('password') as string) ?? '';
@@ -52,23 +55,10 @@ export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
 			username: username,
 			rawPassword: rawPassword,
 		});
-		try {
-			AuthService.loginUser(username, rawPassword);
-		} catch (error) {
-			console.log(error);
-		}
 
-		// console.log('Result of signing in is: ' + result.success);
-		// let user: User = AuthService.user;
-		// console.log(user);
-
-		// if (result.success == 'true') {
-		// 	navigate('/landing');
-		// } else {
-		// 	window.alert(
-		// 		'Sorry, we have some problems signing you up. Please try again later.'
-		// 	);
-		// }
+		console.log('Posting ...');
+		let result = await AuthService.loginUser(username, rawPassword);
+		if (result) navigate('/landing');
 	};
 
 	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {

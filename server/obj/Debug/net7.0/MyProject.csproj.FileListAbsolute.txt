@@ -72,3 +72,9 @@
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Swashbuckle.AspNetCore.SwaggerUI.dll
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/System.IdentityModel.Tokens.Jwt.dll
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/obj/Debug/net7.0/MyProject.MvcApplicationPartsAssemblyInfo.cs
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/System.Web.Cors.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/System.Net.Http.Formatting.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/System.Web.Http.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/System.Web.Http.Cors.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Newtonsoft.Json.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Newtonsoft.Json.Bson.dll

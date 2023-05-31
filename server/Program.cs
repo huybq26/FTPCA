@@ -8,6 +8,19 @@ using AuthControllerGroup;
 
 var builder = WebApplication.CreateBuilder(args);
 
+
+
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("MyPolicy",
+                          policy =>
+                          {
+                              policy.WithOrigins("http://localhost:3000")
+                                                  .AllowAnyHeader()
+                                                  .AllowAnyMethod();
+                          });
+});
+
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
@@ -76,5 +89,7 @@ app.UseHttpsRedirection();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+
+app.UseCors("MyPolicy");
 
 app.Run();

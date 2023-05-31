@@ -42,7 +42,10 @@ type SignUpProps = {
 
 export const SignUp: React.FC<SignUpProps> = ({ onChoiceUpdate }) => {
 	const navigate = useNavigate();
-	const registerUser = (event: React.FormEvent<HTMLFormElement>): void => {
+	const registerUser = async (
+		event: React.FormEvent<HTMLFormElement>
+	): Promise<void> => {
+		event.preventDefault();
 		const data = new FormData(event.currentTarget);
 		let username: string = (data.get('username') as string) ?? '';
 		let phoneNumber: string = (data.get('phoneNumber') as string) ?? '';
@@ -57,33 +60,24 @@ export const SignUp: React.FC<SignUpProps> = ({ onChoiceUpdate }) => {
 			rawPassword: rawPassword,
 			name: name,
 		});
-		let result = AuthService.registerUser(
+		let result = await AuthService.registerUser(
 			username,
 			phoneNumber,
 			email,
 			rawPassword,
 			name
 		);
-
-		console.log('Result of submission is: ' + result.success);
-		let user: User = AuthService.user;
-		console.log(user);
-		if (result.success == 'true') {
-			navigate('/landing');
-		} else {
-			window.alert(
-				'Sorry, we have some problems signing you up. Please try again later.'
-			);
+		if (result) {
+			onChoiceUpdate('signIn');
 		}
-	};
-
-	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		const data = new FormData(event.currentTarget);
-		console.log({
-			email: data.get('email'),
-			password: data.get('password'),
-		});
+		// console.log(user);
+		// if (result.success == 'true') {
+		// 	navigate('/landing');
+		// } else {
+		// 	window.alert(
+		// 		'Sorry, we have some problems signing you up. Please try again later.'
+		// 	);
+		// }
 	};
 
 	return (

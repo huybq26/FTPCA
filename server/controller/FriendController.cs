@@ -25,7 +25,7 @@ namespace FriendControllerGroup
         [HttpPost]
         [Authorize]
         [Route("addfriendrequest")]
-        public async Task<IActionResult> AddFriendRequest(int senderid, int receiverid)
+        public async Task AddFriendRequest(int senderid, int receiverid)
         {
             await FriendService.AddFriendRequest(senderid, receiverid);
         }

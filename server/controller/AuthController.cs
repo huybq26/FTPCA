@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Cors;
 using AccountServiceGroup;
 using UserGroup;
 using JwtServiceGroup;
@@ -7,6 +8,7 @@ using PasswordHashingServiceGroup;
 
 namespace AuthControllerGroup
 {
+    // [EnableCors("MyPolicy")]
     [ApiController]
 
     public class AuthController : ControllerBase
@@ -18,7 +20,7 @@ namespace AuthControllerGroup
         {
             return Ok("This is the response from the Get method.");
         }
-
+        // [EnableCors("MyPolicy")]
         [Route("register")]
         [HttpPost]
         public async Task<IActionResult> Register([FromBody] User user)
@@ -42,7 +44,7 @@ namespace AuthControllerGroup
             }
             return BadRequest(new { Message = "Unexpected error", Data = user });
         }
-
+        // [EnableCors("MyPolicy")]
         [Route("login")]
         [HttpPost]
         public async Task<IActionResult> Login([FromBody] LoginRequest requestData)

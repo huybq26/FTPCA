@@ -35,9 +35,11 @@ namespace JwtServiceGroup
                     new Claim(JwtRegisteredClaimNames.Sub, "TokenForTheApiWithAuth"),
                     new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                     new Claim(JwtRegisteredClaimNames.Iat, DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)),
-                    new Claim(ClaimTypes.NameIdentifier, user.Userid),
-                    new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Email, user.Email)
+                    new Claim("UserId", user.Userid),
+                    new Claim("Username", user.Username),
+                    new Claim("Name", user.Name),
+                    new Claim("Email", user.Email),
+                    new Claim("PhoneNumber", user.PhoneNumber)
                 };
                 return claims;
             }
