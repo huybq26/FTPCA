@@ -11,8 +11,10 @@ namespace DatabaseGroup
             // NOTE: Run the two below commands only one at the start, then comment them again.
             // using var command = new MySqlCommand("CREATE TABLE IF NOT EXISTS User (userid int NOT NULL AUTO_INCREMENT, username varchar(255) NOT NULL, phonenumber varchar(255) NOT NULL, email varchar(255) NOT NULL, name varchar(255) NOT NULL, hashedpassword varchar(255) NOT NULL, PRIMARY KEY (userid))", connection);
             // await command.ExecuteNonQueryAsync();
-
-
+            // using var command = new MySqlCommand("CREATE TABLE IF NOT EXISTS FriendRequest (senderid int NOT NULL, receiverid int NOT NULL)", connection);
+            // await command.ExecuteNonQueryAsync();
+            // using var command2 = new MySqlCommand("CREATE TABLE IF NOT EXISTS Friendship (userid1 int NOT NULL, userid2 int NOT NULL)", connection);
+            // await command2.ExecuteNonQueryAsync();
             // using var insertCommand = new MySqlCommand("INSERT INTO User (username, phonenumber, email, name, hashedpassword) VALUES (@username, @phonenumber, @email, @name, @hashedpassword)", connection);
 
             // // Set parameter values for initial user
@@ -182,20 +184,27 @@ namespace DatabaseGroup
             try
             {
                 List<string> results = new List<string>();
-                using var selectCommand = new MySqlCommand("SELECT username FROM User WHERE username LIKE @value OR phonenumber LIKE @value OR email LIKE @value OR name LIKE @value", Database.connection);
+                using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, name, email FROM User WHERE username LIKE @value OR phonenumber LIKE @value OR email LIKE @value OR name LIKE @value", Database.connection);
 
                 selectCommand.Parameters.AddWithValue("@value", "%" + term + "%");
                 using var reader = await selectCommand.ExecuteReaderAsync();
 
                 while (await reader.ReadAsync())
                 {
-                    for (int i = 0; i < reader.FieldCount; i++)
+                    for (int i = 0; i < reader.FieldCount; i += 5)
                     {
-                        results.Add(reader.GetString(i));
+
+                        List<string> temp = new List<string>();
+                        temp.Add(reader.GetString(i));
+                        temp.Add(reader.GetString(i + 1));
+                        temp.Add(reader.GetString(i + 2));
+                        temp.Add(reader.GetString(i + 3));
+                        temp.Add(reader.GetString(i + 4));
+                        results.Add(string.Join(",", temp));
                     }
                 }
 
-                Console.WriteLine(string.Join(", ", results));
+                Console.WriteLine(string.Join(";", results));
 
                 return results;
             }
@@ -211,6 +220,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Console.WriteLine(senderid + " to " + receiverid);
                 using var insertCommand = new MySqlCommand("INSERT INTO FriendRequest(senderid, receiverid) VALUES(@senderid, @receiverid)", Database.connection);
                 insertCommand.Parameters.AddWithValue("@senderid", senderid);
                 insertCommand.Parameters.AddWithValue("@receiverid", receiverid);

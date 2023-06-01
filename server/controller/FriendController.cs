@@ -25,9 +25,27 @@ namespace FriendControllerGroup
         [HttpPost]
         [Authorize]
         [Route("addfriendrequest")]
-        public async Task AddFriendRequest(int senderid, int receiverid)
+        public async Task<IActionResult> AddFriendRequest(int senderid, int receiverid)
         {
-            await FriendService.AddFriendRequest(senderid, receiverid);
+            try
+            {
+                // Console.WriteLine(senderid + " to " + receiverid);
+                await FriendService.AddFriendRequest(senderid, receiverid);
+                return Ok(new
+                {
+                    Message = "Friend request sent successfully",
+                    Data = new { senderid, receiverid }
+                });
+            }
+            catch (System.Exception)
+            {
+                return BadRequest(new
+                {
+                    Message = "The friend request may already be present",
+                    Data = new { senderid, receiverid }
+                });
+            }
         }
+
     }
 }

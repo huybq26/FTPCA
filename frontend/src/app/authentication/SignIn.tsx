@@ -61,15 +61,6 @@ export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
 		if (result) navigate('/landing');
 	};
 
-	const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
-		event.preventDefault();
-		const data = new FormData(event.currentTarget);
-		console.log({
-			username: data.get('username'),
-			password: data.get('password'),
-		});
-	};
-
 	return (
 		<ThemeProvider theme={theme}>
 			<Container component='main' maxWidth='xs'>

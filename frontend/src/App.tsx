@@ -6,6 +6,7 @@ import './App.css';
 import LandingPage from './app/landing/Landing';
 import User from './user/user';
 import AuthService from './app/authentication/Auth.service';
+import SearchBar from './app/friends/SearchBar';
 
 function App() {
 	return (
@@ -14,6 +15,7 @@ function App() {
 				<Routes>
 					<Route path='/signin' element={<Auth />} />
 					<Route path='/landing' element={<LandingPage />} />
+					<Route path='/search' element={<SearchBar />} />
 				</Routes>
 			</div>
 		</Router>

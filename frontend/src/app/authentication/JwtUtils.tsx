@@ -1,6 +1,6 @@
 import jwtDecode from 'jwt-decode';
 
-interface UserInfo {
+export interface UserInfo {
 	userid: string;
 	username: string;
 	name: string;
