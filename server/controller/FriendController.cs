@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using FriendServiceGroup;
+using UserGroup;
 
 namespace FriendControllerGroup
 {
@@ -46,6 +47,30 @@ namespace FriendControllerGroup
                 });
             }
         }
+
+        [HttpGet]
+        // [Authorize]
+        [Route("queryfriendrequest")]
+        public async Task<IActionResult> GetFriendRequest([FromQuery] int userid)
+        {
+            try
+            {
+                List<User> list = await FriendService.QueryFriendRequest(userid);
+                return Ok(new
+                {
+                    Message = "Friend request retrieved successfully",
+                    Data = list
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Failed to retrieve friend request: " + ex.Message,
+                });
+            }
+        }
+
 
     }
 }

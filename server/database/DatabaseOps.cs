@@ -28,14 +28,14 @@ namespace DatabaseGroup
             // await insertCommand.ExecuteNonQueryAsync();
             Database.connection = connection;
 
-            using var selectCommand = new MySqlCommand("SELECT * FROM User", connection);
-            using var reader = await selectCommand.ExecuteReaderAsync();
-            while (await reader.ReadAsync())
-            {
-                var value = reader.GetValue(0);
-                // do something with 'value'
-                Console.WriteLine(value);
-            }
+            // using var selectCommand = new MySqlCommand("SELECT * FROM User", connection);
+            // using var reader = await selectCommand.ExecuteReaderAsync();
+            // while (await reader.ReadAsync())
+            // {
+            //     var value = reader.GetValue(0);
+            //     // do something with 'value'
+            //     Console.WriteLine(value);
+            // }
 
         }
 
@@ -116,6 +116,43 @@ namespace DatabaseGroup
                 throw;
             }
         }
+
+        public static async Task<List<string>> GetUserDetailsFromId(int id)
+        {
+            List<string> results = new List<string>();
+
+            try
+            {
+                using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, name, email FROM User WHERE userid = @value", Database.connection);
+                selectCommand.Parameters.AddWithValue("@value", id);
+
+                using var reader = await selectCommand.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    List<string> temp = new List<string>();
+                    temp.Add(reader.GetInt32(0).ToString());
+                    temp.Add(reader.GetString(1));
+                    temp.Add(reader.GetString(2));
+                    temp.Add(reader.GetString(3));
+                    temp.Add(reader.GetString(4));
+                    results.Add(string.Join(",", temp));
+                }
+
+                Console.WriteLine(string.Join(";", results));
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                // Handle the exception or rethrow it
+                throw;
+            }
+        }
+
+
+
 
         public static async Task registerUser(string username, string phoneNumber, string email, string name, string hashedPassword)
         {

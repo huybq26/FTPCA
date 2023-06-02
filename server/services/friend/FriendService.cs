@@ -1,6 +1,7 @@
 using UserGroup;
 using DatabaseGroup;
 
+
 namespace FriendServiceGroup
 {
     public class FriendService
@@ -30,11 +31,28 @@ namespace FriendServiceGroup
             await Database.RejectFriendRequest(senderid, receiverid);
         }
 
-        public static async Task<List<string>> QueryFriendRequest(int userid)
+        public static async Task<List<User>> QueryFriendRequest(int userid)
         {
-            List<string> results = await Database.QueryFriendRequest(userid);
-            return results;
+            List<string> usernameList = await Database.QueryFriendRequest(userid);
+            List<User> UserList = new List<User>();
+
+            foreach (string username in usernameList)
+            {
+                List<string> list = await Database.GetDetailsFromUsername(username);
+                UserList.Add(new User
+                {
+                    Userid = list[0],
+                    Username = list[1],
+                    PhoneNumber = list[2],
+                    Email = list[3],
+                    Name = list[4],
+                    HashedPassword = ""
+                });
+            }
+
+            return UserList;
         }
+
 
         public static async Task<List<string>> ListAllFriends(int userid)
         {
