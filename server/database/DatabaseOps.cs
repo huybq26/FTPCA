@@ -43,6 +43,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var selectCommand = new MySqlCommand("SELECT COUNT(*) FROM User WHERE " + field + " = @value", Database.connection);
                 selectCommand.Parameters.AddWithValue("@value", value);
 
@@ -62,6 +63,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 List<string> list = new List<string>();
 
                 using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, email, name, hashedpassword FROM User WHERE username = @value", Database.connection);
@@ -93,6 +95,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var selectCommand = new MySqlCommand("SELECT username FROM User WHERE userid = @value", Database.connection);
                 selectCommand.Parameters.AddWithValue("@value", id);
 
@@ -123,6 +126,7 @@ namespace DatabaseGroup
 
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, name, email FROM User WHERE userid = @value", Database.connection);
                 selectCommand.Parameters.AddWithValue("@value", id);
 
@@ -158,6 +162,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var insertCommand = new MySqlCommand("INSERT INTO User (username, phonenumber, email, name, hashedpassword) VALUES (@username, @phonenumber, @email, @name, @hashedpassword)", Database.connection);
 
                 insertCommand.Parameters.AddWithValue("@username", username);
@@ -180,6 +185,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var insertCommand = new MySqlCommand("UPDATE User SET hashedpassword=@hashedpassword WHERE username=@username", Database.connection);
 
                 insertCommand.Parameters.AddWithValue("@username", username);
@@ -199,6 +205,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var insertCommand = new MySqlCommand("UPDATE User SET phoneNumber=@phonenumber, email=@email, name=@name WHERE username=@username", Database.connection);
 
                 insertCommand.Parameters.AddWithValue("@username", username);
@@ -220,6 +227,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 List<string> results = new List<string>();
                 using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, name, email FROM User WHERE username LIKE @value OR phonenumber LIKE @value OR email LIKE @value OR name LIKE @value", Database.connection);
 
@@ -257,6 +265,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 Console.WriteLine(senderid + " to " + receiverid);
                 using var insertCommand = new MySqlCommand("INSERT INTO FriendRequest(senderid, receiverid) VALUES(@senderid, @receiverid)", Database.connection);
                 insertCommand.Parameters.AddWithValue("@senderid", senderid);
@@ -279,6 +288,7 @@ namespace DatabaseGroup
 
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var insertCommand = new MySqlCommand("INSERT INTO Friendship(userid1, userid2) VALUES(@senderid, @receiverid)", transaction.Connection);
                 insertCommand.Parameters.AddWithValue("@senderid", senderid);
                 insertCommand.Parameters.AddWithValue("@receiverid", receiverid);
@@ -307,6 +317,7 @@ namespace DatabaseGroup
             using var transaction = Database.connection.BeginTransaction();
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var deleteCommand = new MySqlCommand("DELETE FROM FriendRequest WHERE senderid = @senderid AND receiverid = @receiverid", transaction.Connection);
                 deleteCommand.Parameters.AddWithValue("@senderid", senderid);
                 deleteCommand.Parameters.AddWithValue("@receiverid", receiverid);
@@ -324,6 +335,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 List<string> results = new List<string>();
                 using var selectCommand = new MySqlCommand("SELECT senderid FROM FriendRequest WHERE receiverid = @receiverid", Database.connection);
 
@@ -355,6 +367,7 @@ namespace DatabaseGroup
         {
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 List<string> friendList = new List<string>();  // Fix: Use List<string> instead of List<int>
                 using var selectCommand = new MySqlCommand("SELECT userid1, userid2 FROM Friendship WHERE userid1 = @userid OR userid2 = @userid", Database.connection);
 
@@ -399,6 +412,7 @@ namespace DatabaseGroup
             using var transaction = Database.connection.BeginTransaction();
             try
             {
+                Database.connection = await DbConnection.GetDbConnection();
                 using var deleteCommand = new MySqlCommand("DELETE FROM Friendship WHERE (userid1 = @userid AND userid2 = @friendid) OR (userid2 = @userid AND userid1 = @friendid)", transaction.Connection);
                 deleteCommand.Parameters.AddWithValue("@userid", userid);
                 deleteCommand.Parameters.AddWithValue("@friendid", friendid);
@@ -421,11 +435,11 @@ namespace DatabaseGroup
 
         public static async Task<MySqlConnection> GetDbConnection()
         {
-            if (connection == null)
-            {
-                connection = new MySqlConnection("Server=localhost;User ID=huybq;Password=Qwerty26!;Database=FTPCA");
-                await connection.OpenAsync();
-            }
+            // if (connection == null)
+            // {
+            connection = new MySqlConnection("Server=localhost;User ID=huybq;Password=Qwerty26!;Database=FTPCA");
+            await connection.OpenAsync();
+            // }
             return connection;
         }
 

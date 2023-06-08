@@ -71,6 +71,81 @@ namespace FriendControllerGroup
             }
         }
 
+        [HttpPost]
+        // [Authorize]
+        [Route("acceptfriendrequest")]
+        public async Task<IActionResult> AcceptFriendRequest(int senderid, int receiverid)
+        {
+            try
+            {
+                // Console.WriteLine(senderid + " to " + receiverid);
+                await FriendService.AcceptFriendRequest(senderid, receiverid);
+                return Ok(new
+                {
+                    Message = "Friend accepted sent successfully",
+                    Data = new { senderid, receiverid }
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Error occurs when accepting friend request: " + ex.Message,
+                    Data = new { senderid, receiverid }
+                });
+            }
+        }
+
+        [HttpPost]
+        // [Authorize]
+        [Route("declinefriendrequest")]
+        public async Task<IActionResult> RejectFriendRequest(int senderid, int receiverid)
+        {
+            try
+            {
+                // Console.WriteLine(senderid + " to " + receiverid);
+                await FriendService.RejectFriendRequest(senderid, receiverid);
+                return Ok(new
+                {
+                    Message = "Reject friend request successfully",
+                    Data = new { senderid, receiverid }
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Error occurs when rejecting friend request: " + ex.Message,
+                    Data = new { senderid, receiverid }
+                });
+            }
+        }
+
+        [HttpGet]
+        // [Authorize]
+        [Route("friendlisting")]
+        public async Task<IActionResult> ListAllFriends(int userid)
+        {
+            try
+            {
+                // Console.WriteLine(senderid + " to " + receiverid);
+                List<User> results = await FriendService.ListAllFriends(userid);
+                return Ok(new
+                {
+                    Message = "List friends completed",
+                    Data = new { results }
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Error occurs when listing friends: " + ex.Message,
+                    Data = new { userid }
+                });
+            }
+        }
+
 
     }
 }
