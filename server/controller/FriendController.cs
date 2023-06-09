@@ -49,7 +49,7 @@ namespace FriendControllerGroup
         }
 
         [HttpGet]
-        // [Authorize]
+        [Authorize]
         [Route("queryfriendrequest")]
         public async Task<IActionResult> GetFriendRequest([FromQuery] int userid)
         {
@@ -72,7 +72,7 @@ namespace FriendControllerGroup
         }
 
         [HttpPost]
-        // [Authorize]
+        [Authorize]
         [Route("acceptfriendrequest")]
         public async Task<IActionResult> AcceptFriendRequest(int senderid, int receiverid)
         {
@@ -97,7 +97,7 @@ namespace FriendControllerGroup
         }
 
         [HttpPost]
-        // [Authorize]
+        [Authorize]
         [Route("declinefriendrequest")]
         public async Task<IActionResult> RejectFriendRequest(int senderid, int receiverid)
         {
@@ -122,7 +122,7 @@ namespace FriendControllerGroup
         }
 
         [HttpGet]
-        // [Authorize]
+        [Authorize]
         [Route("friendlisting")]
         public async Task<IActionResult> ListAllFriends(int userid)
         {

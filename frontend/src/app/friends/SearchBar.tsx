@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import './SearchBar.styles.css';
 import { UserInfo } from '../authentication/JwtUtils';
 import { fetchToken } from '../authentication/JwtUtils';
+import { useNavigate } from 'react-router-dom';
 
 interface SearchResult {
 	userid: number;
@@ -19,13 +20,15 @@ const SearchBar: React.FC = () => {
 		null
 	);
 	const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
-
+	const navigate = useNavigate();
 	useEffect(() => {
 		const user = fetchToken();
 		if (user) {
 			setUserInfo(user);
 			console.log('Stored user info: ');
 			console.log(userInfo);
+		} else {
+			navigate('/login');
 		}
 	}, []);
 
