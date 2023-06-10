@@ -41,8 +41,8 @@ const FriendsListing: React.FC = () => {
 
 			if (response.ok) {
 				const data: any = await response.json();
-				console.log('Get data: ' + data);
-				setFriends(data);
+				console.log('Get data: ', data.data);
+				setFriends(data.data);
 			} else {
 				console.log('Error:', response.status);
 			}

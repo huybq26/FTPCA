@@ -49,17 +49,21 @@ const SearchBar: React.FC = () => {
 			if (response.ok) {
 				const data: string[] = await response.json();
 				console.log('Get successful:', data);
-				const parsedResults: SearchResult[] = data.map((item) => {
-					const [userid, username, phoneNumber, name, email] = item.split(',');
-					return {
-						userid: Number(userid),
-						username,
-						phoneNumber,
-						name,
-						email,
-						isFriendRequestSent: false,
-					};
-				});
+				const parsedResults: SearchResult[] = data
+					.map((item) => {
+						const [userid, username, phoneNumber, name, email] =
+							item.split(',');
+						return {
+							userid: Number(userid),
+							username,
+							phoneNumber,
+							name,
+							email,
+							isFriendRequestSent: false,
+						};
+					})
+					.filter((result) => result.userid !== Number(userInfo?.userid));
+
 				setResults(parsedResults);
 			} else {
 				console.log('Error:', response.status);

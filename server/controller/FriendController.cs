@@ -133,7 +133,7 @@ namespace FriendControllerGroup
                 return Ok(new
                 {
                     Message = "List friends completed",
-                    Data = new { results }
+                    Data = results
                 });
             }
             catch (Exception ex)
@@ -141,7 +141,7 @@ namespace FriendControllerGroup
                 return BadRequest(new
                 {
                     Message = "Error occurs when listing friends: " + ex.Message,
-                    Data = new { userid }
+                    Data = userid
                 });
             }
         }
