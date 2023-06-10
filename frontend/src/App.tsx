@@ -32,7 +32,11 @@ function App() {
 	const handleLogout = () => {
 		sessionStorage.removeItem('jwtToken');
 		setLoggedIn(false);
-		window.location.href = '/login'; // Redirect to the login page
+		// window.location.href = '/login';
+	};
+
+	const handleLogin = () => {
+		setLoggedIn(true);
 	};
 	//  need to pass logged in state from the login
 	return (
@@ -41,7 +45,7 @@ function App() {
 				{loggedIn && <VerticalNav onLogout={handleLogout} />}
 				<div style={{ flex: 1 }}>
 					<Routes>
-						<Route path='/login' element={<Auth />} />
+						<Route path='/login' element={<Auth onLogin={handleLogin} />} />
 						<Route path='/landing' element={<LandingPage />} />
 						<Route path='/friendlist' element={<FriendsListing />} />
 						<Route path='/friendrequest' element={<FriendRequest />} />

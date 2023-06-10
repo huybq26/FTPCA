@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './FriendRequest.css';
 
 interface FriendRequest {
-	senderid: number;
+	userid: number;
 	username: string;
 	phoneNumber: string;
 	name: string;
@@ -27,13 +27,13 @@ const FriendRequest: React.FC = () => {
 			setUserInfo(user);
 			console.log('Stored user info: ');
 			console.log(userInfo);
-			fetchFriendRequests();
+			fetchFriendRequests(user);
 		} else {
 			navigate('/login');
 		}
 	}, []);
 
-	const fetchFriendRequests = async () => {
+	const fetchFriendRequests = async (userInfo: UserInfo) => {
 		try {
 			const response = await fetch(
 				`http://localhost:5169/queryfriendrequest?userid=${userInfo?.userid}`,
@@ -46,18 +46,20 @@ const FriendRequest: React.FC = () => {
 			);
 
 			if (response.ok) {
-				const data: string[] = await response.json();
+				const data: any = await response.json();
 				console.log('Get successful:', data);
-				const parsedResults: FriendRequest[] = data.map((item) => {
-					const [userid, username, phoneNumber, name, email] = item.split(',');
-					return {
-						senderid: Number(userid),
-						username,
-						phoneNumber,
-						name,
-						email,
-					};
-				});
+				const parsedResults: FriendRequest[] = data.data.map(
+					(item: FriendRequest) => {
+						// const [userid, username, phoneNumber, name, email] = item
+						return {
+							userid: Number(item.userid),
+							username: item.username,
+							phoneNumber: item.phoneNumber,
+							name: item.name,
+							email: item.email,
+						};
+					}
+				);
 				setFriendRequestList(parsedResults);
 			} else {
 				console.log('Error:', response.status);
@@ -134,13 +136,13 @@ const FriendRequest: React.FC = () => {
 	return (
 		<div className='friend-request-container'>
 			{friendRequestList.map((friendRequest) => (
-				<div className='friend-request-item' key={friendRequest.senderid}>
+				<div className='friend-request-item' key={friendRequest.userid}>
 					<p>Username: {friendRequest.username}</p>
 					<p>Name: {friendRequest.name}</p>
-					<button onClick={() => handleRejectRequest(friendRequest.senderid)}>
+					<button onClick={() => handleRejectRequest(friendRequest.userid)}>
 						Decline
 					</button>
-					<button onClick={() => handleAcceptRequest(friendRequest.senderid)}>
+					<button onClick={() => handleAcceptRequest(friendRequest.userid)}>
 						Accept
 					</button>
 					<button onClick={() => handleInfoClick(friendRequest)}>Info</button>
@@ -150,7 +152,7 @@ const FriendRequest: React.FC = () => {
 				<div className='info-card'>
 					<h3>Friend Request Info</h3>
 					<p>
-						<strong>UserID:</strong> {selectedRequest.senderid}
+						<strong>UserID:</strong> {selectedRequest.userid}
 					</p>
 					<p>
 						<strong>Username:</strong> {selectedRequest.username}

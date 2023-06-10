@@ -38,8 +38,12 @@ const theme = createTheme();
 
 type SignInProps = {
 	onChoiceUpdate: (newChoice: 'signIn' | 'signUp') => void;
+	onLoginSuccess: () => void;
 };
-export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
+export const SignIn: React.FC<SignInProps> = ({
+	onChoiceUpdate,
+	onLoginSuccess,
+}) => {
 	const navigate = useNavigate();
 
 	const loginUser = async (
@@ -58,7 +62,10 @@ export const SignIn: React.FC<SignInProps> = ({ onChoiceUpdate }) => {
 
 		console.log('Posting ...');
 		let result = await AuthService.loginUser(username, rawPassword);
-		if (result) navigate('/landing');
+		if (result) {
+			onLoginSuccess();
+			navigate('/landing');
+		}
 	};
 
 	return (

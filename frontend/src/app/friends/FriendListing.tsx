@@ -15,21 +15,22 @@ const FriendsListing: React.FC = () => {
 	const [friends, setFriends] = useState<Friend[]>([]);
 	const [selectedFriend, setSelectedFriend] = useState<Friend | null>(null);
 	const navigate = useNavigate();
+
 	useEffect(() => {
 		const user = fetchToken();
+		console.log(user);
 		if (user) {
 			setUserInfo(user);
-			console.log('Stored user info:');
-			console.log(userInfo);
-			fetchFriends();
+			fetchFriends(user);
 		} else {
 			navigate('/login');
 		}
 	}, []);
-	const fetchFriends = async () => {
+
+	const fetchFriends = async (userInfo: UserInfo) => {
 		try {
 			const response = await fetch(
-				`http://localhost:5169/friendlisting?userid=${userInfo?.userid}`,
+				`http://localhost:5169/friendlisting?userid=${userInfo.userid}`,
 				{
 					method: 'GET',
 					headers: {
@@ -39,7 +40,8 @@ const FriendsListing: React.FC = () => {
 			);
 
 			if (response.ok) {
-				const data: Friend[] = await response.json();
+				const data: any = await response.json();
+				console.log('Get data: ' + data);
 				setFriends(data);
 			} else {
 				console.log('Error:', response.status);
