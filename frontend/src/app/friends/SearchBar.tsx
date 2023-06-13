@@ -11,6 +11,7 @@ interface SearchResult {
 	email: string;
 	phoneNumber: string;
 	isFriendRequestSent: boolean;
+	relationshipStatus: string;
 }
 
 const SearchBar: React.FC = () => {
@@ -21,6 +22,7 @@ const SearchBar: React.FC = () => {
 	);
 	const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 	const navigate = useNavigate();
+
 	useEffect(() => {
 		const user = fetchToken();
 		if (user) {
@@ -49,20 +51,27 @@ const SearchBar: React.FC = () => {
 			if (response.ok) {
 				const data: string[] = await response.json();
 				console.log('Get successful:', data);
-				const parsedResults: SearchResult[] = data
-					.map((item) => {
-						const [userid, username, phoneNumber, name, email] =
-							item.split(',');
-						return {
+				const parsedResults: SearchResult[] = [];
+
+				for (const item of data) {
+					const [userid, username, phoneNumber, name, email] = item.split(',');
+					const relationshipStatus = await fetchRelationshipStatus(
+						userInfo?.userid || '',
+						Number(userid)
+					);
+
+					if (Number(userid) !== Number(userInfo?.userid)) {
+						parsedResults.push({
 							userid: Number(userid),
 							username,
 							phoneNumber,
 							name,
 							email,
 							isFriendRequestSent: false,
-						};
-					})
-					.filter((result) => result.userid !== Number(userInfo?.userid));
+							relationshipStatus,
+						});
+					}
+				}
 
 				setResults(parsedResults);
 			} else {
@@ -73,25 +82,45 @@ const SearchBar: React.FC = () => {
 		}
 	};
 
+	const fetchRelationshipStatus = async (userid1: string, userid2: number) => {
+		try {
+			const response = await fetch(
+				`http://localhost:5169/checkrelationshipstatus?userid1=${userid1}&userid2=${userid2}`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+					},
+				}
+			);
+
+			if (response.ok) {
+				const data: any = await response.json();
+				console.log('Get data: ', data.data);
+				return data.data;
+			} else {
+				console.log('Error:', response.status);
+				return '';
+			}
+		} catch (error) {
+			console.log('An error occurred:', error);
+			return '';
+		}
+	};
+
 	const handleSendFriendRequest = async (
 		senderId: string,
 		receiverId: string,
 		index: number
 	) => {
-		// Logic to send friend request from the senderId to the receiverId
-		console.log('Sending friend request ' + 'to:', receiverId);
+		console.log('Sending friend request to:', receiverId);
 
 		try {
-			// Make the POST request to send the friend request
 			const response = await fetch(
-				'http://localhost:5169/addfriendrequest?senderid=' +
-					senderId +
-					'&receiverid=' +
-					receiverId,
+				`http://localhost:5169/addfriendrequest?senderid=${senderId}&receiverid=${receiverId}`,
 				{
 					method: 'POST',
 					headers: {
-						// 'Content-Type': 'application/json',
 						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
 					},
 				}
@@ -99,12 +128,81 @@ const SearchBar: React.FC = () => {
 
 			if (response.ok) {
 				console.log('Friend request sent successfully');
-				// Update the state to mark the friend request as sent
 				const updatedResults = [...results];
 				updatedResults[index].isFriendRequestSent = true;
 				setResults(updatedResults);
 			} else {
 				console.log('Error sending friend request:', response.status);
+			}
+		} catch (error) {
+			console.log('An error occurred:', error);
+		}
+	};
+
+	const handleAcceptFriendRequest = async (index: number) => {
+		const friendRequest = results[index];
+		console.log('Accepting friend request from:', friendRequest.username);
+
+		try {
+			const response = await fetch(
+				`http://localhost:5169/acceptfriendrequest?senderid=${
+					friendRequest.userid
+				}&receiverid=${Number(userInfo?.userid)}`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+					},
+					// body: JSON.stringify({
+					// 	senderId: friendRequest.userid,
+					// 	receiverId: Number(userInfo?.userid),
+					// }),
+				}
+			);
+
+			if (response.ok) {
+				console.log('Friend request accepted successfully');
+				const updatedResults = [...results];
+				updatedResults[index].relationshipStatus = 'Friend';
+				setResults(updatedResults);
+			} else {
+				console.log('Error accepting friend request:', response.status);
+			}
+		} catch (error) {
+			console.log('An error occurred:', error);
+		}
+	};
+
+	const handleCancelFriendRequest = async (index: number) => {
+		const friendRequest = results[index];
+		console.log('Canceling friend request to:', friendRequest.username);
+
+		try {
+			const response = await fetch(
+				`http://localhost:5169/declinefriendrequest?senderid=${Number(
+					userInfo?.userid
+				)}&receiverid=${friendRequest.userid}`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+					},
+					// body: JSON.stringify({
+					// 	senderId: Number(userInfo?.userid),
+					// 	receiverId: friendRequest.userid,
+					// }),
+				}
+			);
+
+			if (response.ok) {
+				console.log('Friend request canceled successfully');
+				const updatedResults = [...results];
+				updatedResults[index].relationshipStatus = 'Add Friend';
+				setResults(updatedResults);
+			} else {
+				console.log('Error canceling friend request:', response.status);
 			}
 		} catch (error) {
 			console.log('An error occurred:', error);
@@ -134,18 +232,31 @@ const SearchBar: React.FC = () => {
 					<div key={index}>
 						<p>Username: {result.username}</p>
 						<p>Name: {result.name}</p>
-						<button
-							onClick={() =>
-								handleSendFriendRequest(
-									userInfo?.userid || '',
-									result.userid.toString(),
-									index
-								)
-							}
-							disabled={result.isFriendRequestSent}
-						>
-							{result.isFriendRequestSent ? 'Sent!' : 'Send Friend Request'}
-						</button>
+						{result.relationshipStatus === 'Friend' && <p>Friend</p>}
+						{result.relationshipStatus === 'Cancel Friend Request' && (
+							<button onClick={() => handleCancelFriendRequest(index)}>
+								Cancel Friend Request
+							</button>
+						)}
+						{result.relationshipStatus === 'Accept Friend Request' && (
+							<button onClick={() => handleAcceptFriendRequest(index)}>
+								Accept Friend Request
+							</button>
+						)}
+						{result.relationshipStatus === 'Add Friend' && (
+							<button
+								onClick={() =>
+									handleSendFriendRequest(
+										userInfo?.userid || '',
+										result.userid.toString(),
+										index
+									)
+								}
+								disabled={result.isFriendRequestSent}
+							>
+								{result.isFriendRequestSent ? 'Sent!' : 'Send Friend Request'}
+							</button>
+						)}
 						<button onClick={() => handleInfoClick(result)}>Info</button>
 					</div>
 				))}

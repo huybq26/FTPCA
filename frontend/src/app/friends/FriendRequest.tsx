@@ -72,23 +72,26 @@ const FriendRequest: React.FC = () => {
 	const handleAcceptRequest = async (senderId: number) => {
 		try {
 			const response = await fetch(
-				'http://localhost:5169/acceptfriendrequest',
+				`http://localhost:5169/acceptfriendrequest?senderid=${senderId}&receiverid=${Number(
+					userInfo?.userid
+				)}`,
 				{
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
 					},
-					body: JSON.stringify({
-						senderId,
-						receiverId: Number(userInfo?.userid),
-					}),
+					// body: JSON.stringify({
+					// 	senderId: senderId,
+					// 	receiverId: Number(userInfo?.userid),
+					// }),
 				}
 			);
 
 			if (response.ok) {
 				console.log('Friend request accepted successfully');
 				// Perform any necessary actions upon successful acceptance
+				removeFriendRequest(senderId);
 			} else {
 				console.log('Error accepting friend request:', response.status);
 			}
@@ -100,23 +103,26 @@ const FriendRequest: React.FC = () => {
 	const handleRejectRequest = async (senderId: number) => {
 		try {
 			const response = await fetch(
-				'http://localhost:5169/rejectfriendrequest',
+				`http://localhost:5169/declinefriendrequest?senderid=${Number(
+					senderId
+				)}&receiverid=${Number(userInfo?.userid)}`,
 				{
 					method: 'POST',
 					headers: {
 						'Content-Type': 'application/json',
 						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
 					},
-					body: JSON.stringify({
-						senderId,
-						receiverId: Number(userInfo?.userid),
-					}),
+					// body: JSON.stringify({
+					// 	senderId,
+					// 	receiverId: Number(userInfo?.userid),
+					// }),
 				}
 			);
 
 			if (response.ok) {
 				console.log('Friend request accepted successfully');
 				// Perform any necessary actions upon successful acceptance
+				removeFriendRequest(senderId);
 			} else {
 				console.log('Error rejecting friend request:', response.status);
 			}
@@ -131,6 +137,12 @@ const FriendRequest: React.FC = () => {
 
 	const closeInfoCard = () => {
 		setSelectedRequest(null);
+	};
+
+	const removeFriendRequest = (userid: Number) => {
+		setFriendRequestList((prevList) =>
+			prevList.filter((request) => request.userid !== userid)
+		);
 	};
 
 	return (

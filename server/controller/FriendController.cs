@@ -121,6 +121,56 @@ namespace FriendControllerGroup
             }
         }
 
+        [HttpPost]
+        [Authorize]
+        [Route("deleteFriend")]
+        public async Task<IActionResult> DeleteExistingFriend(int userid1, int userid2)
+        {
+            try
+            {
+                // Console.WriteLine(senderid + " to " + receiverid);
+                await FriendService.DeleteExistingFriend(userid1, userid2);
+                return Ok(new
+                {
+                    Message = "Friend accepted sent successfully",
+                    Data = new { userid1, userid2 }
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Error occurs when accepting friend request: " + ex.Message,
+                    Data = new { userid1, userid2 }
+                });
+            }
+        }
+
+        // [HttpPost]
+        // [Authorize]
+        // [Route("cancelfriendrequest")]
+        // public async Task<IActionResult> CancelFriendRequest(int senderid, int receiverid)
+        // {
+        //     try
+        //     {
+        //         // Console.WriteLine(senderid + " to " + receiverid);
+        //         await FriendService.CancelFriendRequest(senderid, receiverid);
+        //         return Ok(new
+        //         {
+        //             Message = "Cancel friend request successfully",
+        //             Data = new { senderid, receiverid }
+        //         });
+        //     }
+        //     catch (Exception ex)
+        //     {
+        //         return BadRequest(new
+        //         {
+        //             Message = "Error occurs when cancelling friend request: " + ex.Message,
+        //             Data = new { senderid, receiverid }
+        //         });
+        //     }
+        // }
+
         [HttpGet]
         [Authorize]
         [Route("friendlisting")]
@@ -142,6 +192,31 @@ namespace FriendControllerGroup
                 {
                     Message = "Error occurs when listing friends: " + ex.Message,
                     Data = userid
+                });
+            }
+        }
+
+        [HttpGet]
+        [Authorize]
+        [Route("checkrelationshipstatus")]
+        public async Task<IActionResult> CheckRelationshipStatus(int userid1, int userid2)
+        {
+            try
+            {
+                // Console.WriteLine(senderid + " to " + receiverid);
+                String results = await FriendService.CheckRelationshipStatus(userid1, userid2);
+                return Ok(new
+                {
+                    Message = "CheckRelationshipStatus completed",
+                    Data = results
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Error occurs when CheckRelationshipStatus: " + ex.Message,
+                    Data = userid1
                 });
             }
         }

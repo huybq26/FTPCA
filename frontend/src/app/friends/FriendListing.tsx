@@ -55,6 +55,30 @@ const FriendsListing: React.FC = () => {
 		setSelectedFriend(friend);
 	};
 
+	const handleDeleteFriend = async (friend: Friend) => {
+		try {
+			const response = await fetch(
+				`http://localhost:5169/deletefriend?userid1=${userInfo?.userid}&userid2=${friend.userid}`,
+				{
+					method: 'POST',
+					headers: {
+						'Content-Type': 'application/json',
+						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+					},
+				}
+			);
+
+			if (response.ok) {
+				console.log('Friend deleted successfully');
+				fetchFriends(userInfo!); // Fetch friends again to update the list
+			} else {
+				console.log('Error deleting friend:', response.status);
+			}
+		} catch (error) {
+			console.log('An error occurred:', error);
+		}
+	};
+
 	const closeInfoCard = () => {
 		setSelectedFriend(null);
 	};
@@ -69,6 +93,7 @@ const FriendsListing: React.FC = () => {
 							<p>Username: {friend.username}</p>
 							<p>Name: {friend.name}</p>
 							<button onClick={() => handleInfoClick(friend)}>Info</button>
+							<button onClick={() => handleDeleteFriend(friend)}>Delete</button>
 						</li>
 					))}
 				</ul>

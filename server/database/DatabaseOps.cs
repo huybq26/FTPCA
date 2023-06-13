@@ -1,4 +1,5 @@
 using MySql.Data.MySqlClient;
+using System.Data;
 namespace DatabaseGroup
 {
     public class Database
@@ -6,26 +7,27 @@ namespace DatabaseGroup
         private static MySqlConnection connection;
         public static async Task Init(MySqlConnection connection)
         {
-            using var connection = new MySqlConnection("Server=localhost;User ID=huybq;Password=Qwerty26!;Database=FTPCA");
+            // Database.connection = await DbConnection.GetDbConnection();
+            // using var connection = new MySqlConnection("Server=localhost;User ID=huybq;Password=Qwerty26!;Database=FTPCA");
 
-            // NOTE: Run the two below commands only one at the start, then comment them again.
-            using var command = new MySqlCommand("CREATE TABLE IF NOT EXISTS User (userid int NOT NULL AUTO_INCREMENT, username varchar(255) NOT NULL, phonenumber varchar(255) NOT NULL, email varchar(255) NOT NULL, name varchar(255) NOT NULL, hashedpassword varchar(255) NOT NULL, PRIMARY KEY (userid))", connection);
-            await command.ExecuteNonQueryAsync();
-            using var command = new MySqlCommand("CREATE TABLE IF NOT EXISTS FriendRequest (senderid int NOT NULL, receiverid int NOT NULL)", connection);
-            await command.ExecuteNonQueryAsync();
-            using (var command = new MySqlCommand("ALTER TABLE FriendRequest ADD CONSTRAINT uc_unique_friend_pair UNIQUE (LEAST(senderid, receiverid), GREATEST(senderid, receiverid)), CHECK (senderid <> receiverid)", connection))
-            {
-                await command.ExecuteNonQueryAsync();
-            }
-            using var command2 = new MySqlCommand("CREATE TABLE IF NOT EXISTS Friendship (userid1 int NOT NULL, userid2 int NOT NULL)", connection);
-            await command2.ExecuteNonQueryAsync();
-            using (var command = new MySqlCommand("ALTER TABLE Friendship ADD CONSTRAINT uc_unique_friend_pair UNIQUE (LEAST(userid1, userid2), GREATEST(userid1, userid2)), CHECK (userid1 <> userid2)", connection))
-            {
-                await command.ExecuteNonQueryAsync();
-            }
+            // // NOTE: Run the two below commands only one at the start, then comment them again.
+            // using var command = new MySqlCommand("CREATE TABLE IF NOT EXISTS User (userid int NOT NULL AUTO_INCREMENT, username varchar(255) NOT NULL, phonenumber varchar(255) NOT NULL, email varchar(255) NOT NULL, name varchar(255) NOT NULL, hashedpassword varchar(255) NOT NULL, PRIMARY KEY (userid))", connection);
+            // await command.ExecuteNonQueryAsync();
+            // using var command1 = new MySqlCommand("CREATE TABLE IF NOT EXISTS FriendRequest (senderid int NOT NULL, receiverid int NOT NULL)", connection);
+            // await command1.ExecuteNonQueryAsync();
+            // using (var command2 = new MySqlCommand("ALTER TABLE FriendRequest ADD CONSTRAINT uc_unique_friend_pair UNIQUE (LEAST(senderid, receiverid), GREATEST(senderid, receiverid)), CHECK (senderid <> receiverid)", connection))
+            // {
+            //     await command2.ExecuteNonQueryAsync();
+            // }
+            // using var command3 = new MySqlCommand("CREATE TABLE IF NOT EXISTS Friendship (userid1 int NOT NULL, userid2 int NOT NULL)", connection);
+            // await command3.ExecuteNonQueryAsync();
+            // using (var command4 = new MySqlCommand("ALTER TABLE Friendship ADD CONSTRAINT uc_unique_friend_pair UNIQUE (LEAST(userid1, userid2), GREATEST(userid1, userid2)), CHECK (userid1 <> userid2)", connection))
+            // {
+            //     await command4.ExecuteNonQueryAsync();
+            // }
             // using var insertCommand = new MySqlCommand("INSERT INTO User (username, phonenumber, email, name, hashedpassword) VALUES (@username, @phonenumber, @email, @name, @hashedpassword)", connection);
 
-            // // Set parameter values for initial user
+            // Set parameter values for initial user
             // insertCommand.Parameters.AddWithValue("@username", "admin2");
             // insertCommand.Parameters.AddWithValue("@phonenumber", "12345678");
             // insertCommand.Parameters.AddWithValue("@email", "admin@gmail.com");
@@ -34,23 +36,15 @@ namespace DatabaseGroup
 
             // // Execute the insert command
             // await insertCommand.ExecuteNonQueryAsync();
-            Database.connection = connection;
-            // using var selectCommand = new MySqlCommand("SELECT * FROM User", connection);
-            // using var reader = await selectCommand.ExecuteReaderAsync();
-            // while (await reader.ReadAsync())
-            // {
-            //     var value = reader.GetValue(0);
-            //     // do something with 'value'
-            //     Console.WriteLine(value);
-            // }
-
         }
+
 
         public static async Task<int> CountOccurrence(string field, string value)
         {
+            Database.connection = await DbConnection.GetDbConnection();
+
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 using var selectCommand = new MySqlCommand("SELECT COUNT(*) FROM User WHERE " + field + " = @value", Database.connection);
                 selectCommand.Parameters.AddWithValue("@value", value);
 
@@ -64,13 +58,21 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task<List<string>> GetDetailsFromUsername(string username)
         {
+            Database.connection = await DbConnection.GetDbConnection();
+
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 List<string> list = new List<string>();
 
                 using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, email, name, hashedpassword FROM User WHERE username = @value", Database.connection);
@@ -96,13 +98,21 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task<string> getUsernameFromId(int id)
         {
+            Database.connection = await DbConnection.GetDbConnection();
+
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 using var selectCommand = new MySqlCommand("SELECT username FROM User WHERE userid = @value", Database.connection);
                 selectCommand.Parameters.AddWithValue("@value", id);
 
@@ -125,15 +135,22 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task<List<string>> GetUserDetailsFromId(int id)
         {
             List<string> results = new List<string>();
+            Database.connection = await DbConnection.GetDbConnection();
 
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, name, email FROM User WHERE userid = @value", Database.connection);
                 selectCommand.Parameters.AddWithValue("@value", id);
 
@@ -160,6 +177,13 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
 
@@ -167,9 +191,10 @@ namespace DatabaseGroup
 
         public static async Task registerUser(string username, string phoneNumber, string email, string name, string hashedPassword)
         {
+            Database.connection = await DbConnection.GetDbConnection();
+
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 using var insertCommand = new MySqlCommand("INSERT INTO User (username, phonenumber, email, name, hashedpassword) VALUES (@username, @phonenumber, @email, @name, @hashedpassword)", Database.connection);
 
                 insertCommand.Parameters.AddWithValue("@username", username);
@@ -186,13 +211,21 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task changePassword(string username, string newHashedPassword)
         {
+            Database.connection = await DbConnection.GetDbConnection();
+
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 using var insertCommand = new MySqlCommand("UPDATE User SET hashedpassword=@hashedpassword WHERE username=@username", Database.connection);
 
                 insertCommand.Parameters.AddWithValue("@username", username);
@@ -206,13 +239,21 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task updateDetails(string username, string phoneNumber, string email, string name)
         {
+            Database.connection = await DbConnection.GetDbConnection();
+
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 using var insertCommand = new MySqlCommand("UPDATE User SET phoneNumber=@phonenumber, email=@email, name=@name WHERE username=@username", Database.connection);
 
                 insertCommand.Parameters.AddWithValue("@username", username);
@@ -228,13 +269,20 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task<List<string>> SearchFriends(string term)
         {
+            Database.connection = await DbConnection.GetDbConnection();
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 List<string> results = new List<string>();
                 using var selectCommand = new MySqlCommand("SELECT userid, username, phonenumber, name, email FROM User WHERE username LIKE @value OR phonenumber LIKE @value OR email LIKE @value OR name LIKE @value", Database.connection);
 
@@ -266,10 +314,18 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task AddFriendRequest(int senderid, int receiverid)
         {
+
             try
             {
                 Database.connection = await DbConnection.GetDbConnection();
@@ -286,18 +342,27 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
 
         public static async Task AcceptFriendRequest(int senderid, int receiverid)
         {
+            Database.connection = await DbConnection.GetDbConnection();
             using var transaction = Database.connection.BeginTransaction();
 
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
-                using var insertCommand = new MySqlCommand("INSERT INTO Friendship(userid1, userid2) VALUES(@senderid, @receiverid)", transaction.Connection);
 
+                using var insertCommand = new MySqlCommand("INSERT INTO Friendship(userid1, userid2) VALUES(@senderid, @receiverid)", transaction.Connection);
+                insertCommand.Parameters.AddWithValue("@senderid", senderid);
+                insertCommand.Parameters.AddWithValue("@receiverid", receiverid);
                 await insertCommand.ExecuteNonQueryAsync();
 
                 using var deleteCommand = new MySqlCommand("DELETE FROM FriendRequest WHERE senderid = @senderid AND receiverid = @receiverid", transaction.Connection);
@@ -319,10 +384,11 @@ namespace DatabaseGroup
 
         public static async Task RejectFriendRequest(int senderid, int receiverid)
         {
+            Database.connection = await DbConnection.GetDbConnection();
             using var transaction = Database.connection.BeginTransaction();
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
+
                 using var deleteCommand = new MySqlCommand("DELETE FROM FriendRequest WHERE senderid = @senderid AND receiverid = @receiverid", transaction.Connection);
                 deleteCommand.Parameters.AddWithValue("@senderid", senderid);
                 deleteCommand.Parameters.AddWithValue("@receiverid", receiverid);
@@ -336,11 +402,12 @@ namespace DatabaseGroup
             }
         }
 
+
         public static async Task<List<string>> QueryFriendRequest(int userid)
         {
+            Database.connection = await DbConnection.GetDbConnection();
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
                 List<string> results = new List<string>();
                 using var selectCommand = new MySqlCommand("SELECT senderid FROM FriendRequest WHERE receiverid = @receiverid", Database.connection);
 
@@ -366,13 +433,21 @@ namespace DatabaseGroup
                 Console.WriteLine("An error occurred: " + ex.Message);
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task<List<string>> ListAllFriends(int userid)
         {
+            Database.connection = await DbConnection.GetDbConnection();
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
+
                 List<string> friendList = new List<string>();  // Fix: Use List<string> instead of List<int>
                 using var selectCommand = new MySqlCommand("SELECT userid1, userid2 FROM Friendship WHERE userid1 = @userid OR userid2 = @userid", Database.connection);
 
@@ -409,16 +484,22 @@ namespace DatabaseGroup
                 // Handle the exception or rethrow it
                 throw;
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
 
         public static async Task DeleteExistingFriend(int userid, int friendid)
         {
-            using var transaction = Database.connection.BeginTransaction();
+            Database.connection = await DbConnection.GetDbConnection();
             try
             {
-                Database.connection = await DbConnection.GetDbConnection();
-                using var deleteCommand = new MySqlCommand("DELETE FROM Friendship WHERE (userid1 = @userid AND userid2 = @friendid) OR (userid2 = @userid AND userid1 = @friendid)", transaction.Connection);
+                using var deleteCommand = new MySqlCommand("DELETE FROM Friendship WHERE (userid1 = @userid AND userid2 = @friendid) OR (userid2 = @userid AND userid1 = @friendid)", Database.connection);
                 deleteCommand.Parameters.AddWithValue("@userid", userid);
                 deleteCommand.Parameters.AddWithValue("@friendid", friendid);
 
@@ -428,8 +509,85 @@ namespace DatabaseGroup
             {
 
                 Console.WriteLine("An error occurred: " + ex.Message);
+                throw;
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
             }
         }
+
+        public static async Task<string> CheckRelationshipStatus(int userid1, int userid2)
+        {
+            try
+            {
+                using (var connection = await DbConnection.GetDbConnection())
+                {
+                    using (var selectCommand = new MySqlCommand("SELECT userid1, userid2 FROM Friendship WHERE (userid1 = @userid1 AND userid2 = @userid2) OR (userid1 = @userid2 AND userid2=@userid1)", connection))
+                    {
+                        selectCommand.Parameters.AddWithValue("@userid1", userid1);
+                        selectCommand.Parameters.AddWithValue("@userid2", userid2);
+
+                        using (var reader = await selectCommand.ExecuteReaderAsync())
+                        {
+                            if (reader.HasRows)
+                            {
+                                Console.WriteLine("Friend");
+                                return "Friend";
+                            }
+                        }
+                    }
+
+                    using (var selectCommand = new MySqlCommand("SELECT senderid, receiverid FROM FriendRequest WHERE senderid = @userid1 AND receiverid = @userid2", connection))
+                    {
+                        selectCommand.Parameters.AddWithValue("@userid1", userid1);
+                        selectCommand.Parameters.AddWithValue("@userid2", userid2);
+
+                        using (var reader = await selectCommand.ExecuteReaderAsync())
+                        {
+                            if (reader.HasRows)
+                            {
+                                Console.WriteLine("Cancel Friend Request");
+                                return "Cancel Friend Request";
+                            }
+                        }
+                    }
+
+                    using (var selectCommand = new MySqlCommand("SELECT senderid, receiverid FROM FriendRequest WHERE senderid = @userid1 AND receiverid = @userid2", connection))
+                    {
+                        selectCommand.Parameters.AddWithValue("@userid1", userid2);
+                        selectCommand.Parameters.AddWithValue("@userid2", userid1);
+
+                        using (var reader = await selectCommand.ExecuteReaderAsync())
+                        {
+                            if (reader.HasRows)
+                            {
+                                Console.WriteLine("Accept Friend Request");
+                                return "Accept Friend Request";
+                            }
+                        }
+                    }
+                }
+                Console.WriteLine("Add Friend");
+                return "Add Friend";
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+                throw;
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
     }
 
     public class DbConnection

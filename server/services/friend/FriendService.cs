@@ -18,18 +18,53 @@ namespace FriendServiceGroup
         public static async Task AddFriendRequest(int senderid, int receiverid)
         {
             // if two people are friend already, then return false directly
-            await Database.AddFriendRequest(senderid, receiverid);
+            if (await Database.CheckRelationshipStatus(senderid, receiverid) == "Add Friend")
+            {
+                await Database.AddFriendRequest(senderid, receiverid);
+            }
+            else
+            {
+                Console.WriteLine("A friend request may already be sent, or they are already be friend. Please check again.");
+            }
         }
 
         public static async Task AcceptFriendRequest(int senderid, int receiverid)
         {
-            await Database.AcceptFriendRequest(senderid, receiverid);
+            Console.WriteLine("Checking for senderid " + senderid + " receiverid " + receiverid);
+
+            if (await Database.CheckRelationshipStatus(senderid, receiverid) == "Cancel Friend Request")
+            {
+                await Database.AcceptFriendRequest(senderid, receiverid);
+            }
+            else
+            {
+                Console.WriteLine("A friend request may already be sent, or they are already be friend. Please check again.");
+            }
         }
 
         public static async Task RejectFriendRequest(int senderid, int receiverid)
         {
-            await Database.RejectFriendRequest(senderid, receiverid);
+            if (await Database.CheckRelationshipStatus(senderid, receiverid) == "Cancel Friend Request")
+            {
+                await Database.RejectFriendRequest(senderid, receiverid);
+            }
+            else
+            {
+                Console.WriteLine("A friend request may already be sent, or they are already be friend. Please check again.");
+            }
         }
+
+        // public static async Task CancelFriendRequest(int senderid, int receiverid)
+        // {
+        //     if (Database.CheckRelationshipStatus(senderid, receiverid) == "Cancel Friend Request")
+        //     {
+        //         await Database.RejectFriendRequest(senderid, receiverid); // on purpose, to cancel request
+        //     }
+        //     else
+        //     {
+        //         Console.WriteLine("A friend request may already be sent, or they are already be friend. Please check again.");
+        //     }
+        // }
 
         public static async Task<List<User>> QueryFriendRequest(int userid)
         {
@@ -78,7 +113,20 @@ namespace FriendServiceGroup
 
         public static async Task DeleteExistingFriend(int userid, int friendid)
         {
-            await Database.DeleteExistingFriend(userid, friendid);
+            Console.WriteLine("Checking for userid " + userid + " friendid " + friendid);
+            if (await Database.CheckRelationshipStatus(userid, friendid) == "Friend")
+            {
+                await Database.DeleteExistingFriend(userid, friendid);
+            }
+            else
+            {
+                Console.WriteLine("Error. They may not be friend yet.");
+            }
+        }
+
+        public static async Task<String> CheckRelationshipStatus(int userid1, int userid2)
+        {
+            return await Database.CheckRelationshipStatus(userid1, userid2);
         }
     }
 }
