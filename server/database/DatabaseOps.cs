@@ -7,12 +7,14 @@ namespace DatabaseGroup
         private static MySqlConnection connection;
         public static async Task Init(MySqlConnection connection)
         {
-            // Database.connection = await DbConnection.GetDbConnection();
+            Database.connection = await DbConnection.GetDbConnection();
             // using var connection = new MySqlConnection("Server=localhost;User ID=huybq;Password=Qwerty26!;Database=FTPCA");
 
             // // NOTE: Run the two below commands only one at the start, then comment them again.
             // using var command = new MySqlCommand("CREATE TABLE IF NOT EXISTS User (userid int NOT NULL AUTO_INCREMENT, username varchar(255) NOT NULL, phonenumber varchar(255) NOT NULL, email varchar(255) NOT NULL, name varchar(255) NOT NULL, hashedpassword varchar(255) NOT NULL, PRIMARY KEY (userid))", connection);
             // await command.ExecuteNonQueryAsync();
+
+
             // using var command1 = new MySqlCommand("CREATE TABLE IF NOT EXISTS FriendRequest (senderid int NOT NULL, receiverid int NOT NULL)", connection);
             // await command1.ExecuteNonQueryAsync();
             // using (var command2 = new MySqlCommand("ALTER TABLE FriendRequest ADD CONSTRAINT uc_unique_friend_pair UNIQUE (LEAST(senderid, receiverid), GREATEST(senderid, receiverid)), CHECK (senderid <> receiverid)", connection))
@@ -36,6 +38,57 @@ namespace DatabaseGroup
 
             // // Execute the insert command
             // await insertCommand.ExecuteNonQueryAsync();
+
+            using var commandConv = new MySqlCommand(@"
+    CREATE TABLE IF NOT EXISTS Conversation (
+        convid BINARY(16) PRIMARY KEY,
+        convname varchar(255) NOT NULL,
+        creationtime TIME NOT NULL,
+        lastmessage TIME NOT NULL
+    )", connection);
+            await commandConv.ExecuteNonQueryAsync();
+
+            using var commandConvP = new MySqlCommand(@"
+    CREATE TABLE IF NOT EXISTS Conv_Parti (
+        convid BINARY(16) NOT NULL,
+        userid INT NOT NULL,
+        FOREIGN KEY (convid) REFERENCES Conversation(convid),
+        FOREIGN KEY (userid) REFERENCES User(userid),
+        INDEX fk_convid_idx (convid),
+        INDEX fk_userid_idx (userid)
+    )", connection);
+            await commandConvP.ExecuteNonQueryAsync();
+
+            using var commandMess = new MySqlCommand(@"
+    CREATE TABLE IF NOT EXISTS Message (
+        messageid BINARY(16) NOT NULL PRIMARY KEY,
+        convid BINARY(16) NOT NULL,
+        senderid INT NOT NULL,
+        content varchar(1000) NOT NULL,
+        timestampt TIME NOT NULL,
+        fileid BINARY(16),
+        FOREIGN KEY (convid) REFERENCES Conversation(convid),
+        FOREIGN KEY (senderid) REFERENCES User(userid),
+        INDEX fk_convid_idx (convid),
+        INDEX fk_senderid_idx (senderid)
+    )", connection);
+            await commandMess.ExecuteNonQueryAsync();
+
+            using var commandFile = new MySqlCommand(@"
+    CREATE TABLE IF NOT EXISTS File (
+        fileid BINARY(16) PRIMARY KEY,
+        filename VARCHAR(255) NOT NULL,
+        filepath VARCHAR(255) NOT NULL,
+        filesize INT NOT NULL,
+        filetype VARCHAR(50) NOT NULL
+    )", connection);
+            await commandFile.ExecuteNonQueryAsync();
+
+            if (Database.connection.State != ConnectionState.Closed)
+            {
+                Database.connection.Close();
+            }
+
         }
 
 
