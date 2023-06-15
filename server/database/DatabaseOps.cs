@@ -1,5 +1,6 @@
 using MySql.Data.MySqlClient;
 using System.Data;
+using System;
 namespace DatabaseGroup
 {
     public class Database
@@ -41,7 +42,7 @@ namespace DatabaseGroup
 
             using var commandConv = new MySqlCommand(@"
     CREATE TABLE IF NOT EXISTS Conversation (
-        convid BINARY(16) PRIMARY KEY,
+        convid VARCHAR(36) PRIMARY KEY,
         convname varchar(255) NOT NULL,
         creationtime TIME NOT NULL,
         lastmessage TIME NOT NULL
@@ -50,7 +51,7 @@ namespace DatabaseGroup
 
             using var commandConvP = new MySqlCommand(@"
     CREATE TABLE IF NOT EXISTS Conv_Parti (
-        convid BINARY(16) NOT NULL,
+        convid VARCHAR(36) NOT NULL,
         userid INT NOT NULL,
         FOREIGN KEY (convid) REFERENCES Conversation(convid),
         FOREIGN KEY (userid) REFERENCES User(userid),
@@ -61,12 +62,12 @@ namespace DatabaseGroup
 
             using var commandMess = new MySqlCommand(@"
     CREATE TABLE IF NOT EXISTS Message (
-        messageid BINARY(16) NOT NULL PRIMARY KEY,
-        convid BINARY(16) NOT NULL,
+        messageid VARCHAR(36) NOT NULL PRIMARY KEY,
+        convid VARCHAR(36) NOT NULL,
         senderid INT NOT NULL,
         content varchar(1000) NOT NULL,
         timestampt TIME NOT NULL,
-        fileid BINARY(16),
+        fileid VARCHAR(36),
         FOREIGN KEY (convid) REFERENCES Conversation(convid),
         FOREIGN KEY (senderid) REFERENCES User(userid),
         INDEX fk_convid_idx (convid),
@@ -76,7 +77,7 @@ namespace DatabaseGroup
 
             using var commandFile = new MySqlCommand(@"
     CREATE TABLE IF NOT EXISTS File (
-        fileid BINARY(16) PRIMARY KEY,
+        fileid VARCHAR(36) PRIMARY KEY,
         filename VARCHAR(255) NOT NULL,
         filepath VARCHAR(255) NOT NULL,
         filesize INT NOT NULL,
@@ -640,6 +641,187 @@ namespace DatabaseGroup
                 }
             }
         }
+
+        public static async Task<string> CreateConversation(string convname, List<int> participants)
+        {
+            Database.connection = await DbConnection.GetDbConnection();
+            try
+            {
+                using var insertCommand = new MySqlCommand("INSERT INTO Conversation (convid, convname, creationtime, lastmessage) VALUES (@convid, @convname, @creationtime, @lastmessage)", Database.connection);
+                Guid uuid = Guid.NewGuid();
+                string uuidString = uuid.ToString();
+
+                insertCommand.Parameters.AddWithValue("@convid", uuidString);
+                insertCommand.Parameters.AddWithValue("@convname", convname);
+                insertCommand.Parameters.AddWithValue("@creationtime", DateTime.Now);
+                insertCommand.Parameters.AddWithValue("@lastmessage", DateTime.Now);
+
+                await insertCommand.ExecuteNonQueryAsync();
+
+                await Database.AddParticipants(uuidString, participants);
+                return uuidString;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+                throw;
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
+        public static async Task AddParticipants(string convid, List<int> participants)
+        {
+            Database.connection = await DbConnection.GetDbConnection();
+            try
+            {
+                foreach (int userid in participants)
+                {
+                    using var insertCommand = new MySqlCommand("INSERT INTO Conv_Parti (convid, userid) VALUES (@convid, @userid)", Database.connection);
+
+                    insertCommand.Parameters.AddWithValue("@convid", convid);
+                    insertCommand.Parameters.AddWithValue("@userid", userid);
+
+                    await insertCommand.ExecuteNonQueryAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+                throw;
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
+        public static async Task<List<List<string>>> QueryConversation(int userid, DateTime lastMessageTime)
+        {
+            Database.connection = await DbConnection.GetDbConnection();
+            try
+            {
+                List<List<string>> Conversations = new List<List<string>>();
+                using var selectCommand = new MySqlCommand("SELECT Conversation.convid, Conversation.convname FROM Conversation LEFT JOIN Conv_Parti ON Conv_Parti.convid = Conversation.convid WHERE Conversation.lastmessage < @lastmessage ORDER BY Conversation.lastmessage DESC LIMIT 25", Database.connection);
+
+                selectCommand.Parameters.AddWithValue("@lastmessage", lastMessageTime);
+                using var reader = await selectCommand.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    List<string> conversation = new List<string>
+                    {
+                        reader.GetString(0), // Assuming the first column is convid
+                        reader.GetString(1)  // Assuming the second column is convname
+                    };
+                    Conversations.Add(conversation);
+                }
+
+                Console.WriteLine(string.Join(", ", Conversations));
+
+                return Conversations;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
+        public static async Task<List<List<string>>> GetParticipantsFromConv(string convid)
+        {
+            Database.connection = await DbConnection.GetDbConnection();
+            try
+            {
+                List<List<string>> results = new List<List<string>>();
+                using var selectCommand = new MySqlCommand("SELECT userid, username, name FROM User LEFT JOIN Conv_Parti ON User.userid = Conv_Parti.userid WHERE Conv_Parti.convid = @convid", Database.connection);
+
+                selectCommand.Parameters.AddWithValue("@convid", convid);
+                using var reader = await selectCommand.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    List<string> temp = new List<string>();
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        if (reader.IsDBNull(i))
+                        {
+                            temp.Add(null); // Handle null values if necessary
+                        }
+                        else
+                        {
+                            if (i == 0) // Assuming the first column is the userid
+                            {
+                                temp.Add(reader.GetInt32(i).ToString()); // Convert the integer value to string
+                            }
+                            else
+                            {
+                                temp.Add(reader.GetString(i)); // GetString for string columns
+                            }
+                        }
+                    }
+                    results.Add(temp);
+                }
+
+                return results;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
+
+        public static async Task RemoveParticipants(string convid, int participantId)
+        {
+            Database.connection = await DbConnection.GetDbConnection();
+            try
+            {
+                using var insertCommand = new MySqlCommand("DELETE FROM Conv_Parti WHERE userid = @userid", Database.connection);
+
+                insertCommand.Parameters.AddWithValue("@userid", participantId);
+
+                await insertCommand.ExecuteNonQueryAsync();
+
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+                throw;
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
+
 
     }
 
