@@ -12,6 +12,7 @@ import FriendsListing from './app/friends/FriendListing';
 import FriendRequest from './app/friends/FriendRequest';
 import VerticalNav from './app/navigation/VerticalNav';
 import { fetchToken } from './app/authentication/JwtUtils';
+import MessageChat from './app/messaging/MessageChat';
 
 function App() {
 	const [loggedIn, setLoggedIn] = useState(false);
@@ -50,6 +51,7 @@ function App() {
 						<Route path='/friendlist' element={<FriendsListing />} />
 						<Route path='/friendrequest' element={<FriendRequest />} />
 						<Route path='/searchfriend' element={<SearchBar />} />
+						<Route path='/message' element={<MessageChat />} />
 					</Routes>
 				</div>
 			</div>

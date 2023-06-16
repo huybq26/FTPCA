@@ -11,7 +11,7 @@ namespace MessageControllerGroup
     public class MessageControllerGroup : ControllerBase
     {
         [HttpPost]
-        // [Authorize]
+        [Authorize]
         [Route("createconv")]
         public async Task<IActionResult> CreateConversation(string convname, string participantList)
         {
@@ -40,7 +40,7 @@ namespace MessageControllerGroup
         }
 
         [HttpPost]
-        // [Authorize]
+        [Authorize]
         [Route("addparticipant")]
         public async Task<IActionResult> AddParticipants(string convid, string participantList)
         {
@@ -70,7 +70,7 @@ namespace MessageControllerGroup
         }
 
         [HttpGet]
-        // [Authorize]
+        [Authorize]
         [Route("queryconversation")]
         public async Task<IActionResult> QueryConversation(int userid, DateTime lastmessage)
         {
@@ -94,7 +94,7 @@ namespace MessageControllerGroup
         }
 
         [HttpGet]
-        // [Authorize]
+        [Authorize]
         [Route("getparticipant")]
         public async Task<IActionResult> GetParticipantsFromConv(string convid)
 
@@ -119,7 +119,7 @@ namespace MessageControllerGroup
         }
 
         [HttpPost]
-        // [Authorize]
+        [Authorize]
         [Route("removeparticipant")]
         public async Task<IActionResult> RemoveParticipant(string convid, int participantId)
         {
@@ -148,7 +148,7 @@ namespace MessageControllerGroup
 
 
         [HttpPost]
-        // [Authorize]
+        [Authorize]
         [Route("sendmessage")]
         public async Task<IActionResult> SendMessage(int senderid, string convid, string content)
         {
@@ -175,7 +175,7 @@ namespace MessageControllerGroup
         }
 
         [HttpGet]
-        // [Authorize]
+        [Authorize]
         [Route("querymessage")]
         public async Task<IActionResult> QueryMessage(string convid, DateTime lastMessageTime)
         {
