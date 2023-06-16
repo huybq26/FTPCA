@@ -5,6 +5,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using AuthControllerGroup;
+using FriendControllerGroup;
+using MessageControllerGroup;
 
 var builder = WebApplication.CreateBuilder(args);
 

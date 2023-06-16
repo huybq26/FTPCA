@@ -44,8 +44,8 @@ namespace DatabaseGroup
     CREATE TABLE IF NOT EXISTS Conversation (
         convid VARCHAR(36) PRIMARY KEY,
         convname varchar(255) NOT NULL,
-        creationtime TIME NOT NULL,
-        lastmessage TIME NOT NULL
+        creationtime DATETIME NOT NULL,
+        lastmessage DATETIME NOT NULL
     )", connection);
             await commandConv.ExecuteNonQueryAsync();
 
@@ -66,7 +66,7 @@ namespace DatabaseGroup
         convid VARCHAR(36) NOT NULL,
         senderid INT NOT NULL,
         content varchar(1000) NOT NULL,
-        timestampt TIME NOT NULL,
+        timestampt DATETIME NOT NULL,
         fileid VARCHAR(36),
         FOREIGN KEY (convid) REFERENCES Conversation(convid),
         FOREIGN KEY (senderid) REFERENCES User(userid),
@@ -434,6 +434,13 @@ namespace DatabaseGroup
                 Console.WriteLine("An error occurred: " + ex.Message);
                 transaction.Rollback();
             }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
         }
 
         public static async Task RejectFriendRequest(int senderid, int receiverid)
@@ -710,10 +717,12 @@ namespace DatabaseGroup
             try
             {
                 List<List<string>> Conversations = new List<List<string>>();
-                using var selectCommand = new MySqlCommand("SELECT Conversation.convid, Conversation.convname FROM Conversation LEFT JOIN Conv_Parti ON Conv_Parti.convid = Conversation.convid WHERE Conversation.lastmessage < @lastmessage ORDER BY Conversation.lastmessage DESC LIMIT 25", Database.connection);
+                using var selectCommand = new MySqlCommand("SELECT Conversation.convid, Conversation.convname FROM Conversation LEFT JOIN Conv_Parti ON Conv_Parti.convid = Conversation.convid WHERE Conversation.lastmessage < @lastmessage AND userid = @userid ORDER BY Conversation.lastmessage DESC LIMIT 25", Database.connection);
 
                 selectCommand.Parameters.AddWithValue("@lastmessage", lastMessageTime);
+                selectCommand.Parameters.AddWithValue("@userid", userid);
                 using var reader = await selectCommand.ExecuteReaderAsync();
+
 
                 while (await reader.ReadAsync())
                 {
@@ -749,7 +758,7 @@ namespace DatabaseGroup
             try
             {
                 List<List<string>> results = new List<List<string>>();
-                using var selectCommand = new MySqlCommand("SELECT userid, username, name FROM User LEFT JOIN Conv_Parti ON User.userid = Conv_Parti.userid WHERE Conv_Parti.convid = @convid", Database.connection);
+                using var selectCommand = new MySqlCommand("SELECT User.userid, User.username, User.name FROM User LEFT JOIN Conv_Parti ON User.userid = Conv_Parti.userid WHERE Conv_Parti.convid = @convid", Database.connection);
 
                 selectCommand.Parameters.AddWithValue("@convid", convid);
                 using var reader = await selectCommand.ExecuteReaderAsync();
@@ -795,7 +804,7 @@ namespace DatabaseGroup
         }
 
 
-        public static async Task RemoveParticipants(string convid, int participantId)
+        public static async Task RemoveParticipant(string convid, int participantId)
         {
             Database.connection = await DbConnection.GetDbConnection();
             try
@@ -820,6 +829,129 @@ namespace DatabaseGroup
                 }
             }
         }
+
+        public static async Task SendMessage(int senderid, string convid, string content)
+        {
+            // Check if the sender is a participant of the conversation
+            Database.connection = await DbConnection.GetDbConnection();
+            try
+            {
+                using var checkParticipantCommand = new MySqlCommand("SELECT COUNT(*) FROM Conv_Parti WHERE convid = @convid AND userid = @userid", Database.connection);
+                checkParticipantCommand.Parameters.AddWithValue("@convid", convid);
+                checkParticipantCommand.Parameters.AddWithValue("@userid", senderid);
+                object participantCountObj = await checkParticipantCommand.ExecuteScalarAsync();
+
+                if (participantCountObj != null)
+                {
+                    int participantCount = Convert.ToInt32(participantCountObj);
+
+                    if (participantCount == 0)
+                    {
+                        // Sender is not a participant of the conversation
+                        Console.WriteLine("Unauthorized: Sender is not a participant of the conversation.");
+                        return;
+                    }
+                }
+                else
+                {
+                    // Error occurred while retrieving the participant count
+                    Console.WriteLine("Unable to determine the participant count.");
+                    return;
+                }
+
+                // Sender is a participant, proceed with inserting the message
+                using var transaction = Database.connection.BeginTransaction();
+
+                try
+                {
+                    using var insertCommand = new MySqlCommand("INSERT INTO Message (messageid, convid, senderid, content, timestampt) VALUES (@messageid, @convid, @senderid, @content, @timestampt)", transaction.Connection);
+                    Guid uuid = Guid.NewGuid();
+                    string uuidString = uuid.ToString();
+                    insertCommand.Parameters.AddWithValue("@messageid", uuidString);
+                    insertCommand.Parameters.AddWithValue("@convid", convid);
+                    insertCommand.Parameters.AddWithValue("@senderid", senderid);
+                    insertCommand.Parameters.AddWithValue("@content", content);
+                    insertCommand.Parameters.AddWithValue("@timestampt", DateTime.Now);
+                    await insertCommand.ExecuteNonQueryAsync();
+
+                    using var updateCommand = new MySqlCommand("UPDATE Conversation SET lastmessage = @lastmessage WHERE convid = @convid", transaction.Connection);
+                    updateCommand.Parameters.AddWithValue("@lastmessage", DateTime.Now);
+                    updateCommand.Parameters.AddWithValue("@convid", convid);
+
+                    await updateCommand.ExecuteNonQueryAsync();
+
+                    // Commit the transaction if both insert and update are successful
+                    transaction.Commit();
+                }
+                catch (Exception ex)
+                {
+                    // Handle any exceptions and roll back the transaction
+                    Console.WriteLine("An error occurred: " + ex.Message);
+                    transaction.Rollback();
+                }
+                finally
+                {
+                    if (Database.connection.State != ConnectionState.Closed)
+                    {
+                        Database.connection.Close();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
+
+        public static async Task<List<List<string>>> QueryMessage(string convid, DateTime lastMessageTime)
+        {
+            // return the name (not username) of the sender, content and sent time
+            Database.connection = await DbConnection.GetDbConnection();
+            try
+            {
+                List<List<string>> Messages = new List<List<string>>();
+                using var selectCommand = new MySqlCommand("SELECT User.name, Message.content, Message.timestampt FROM Message LEFT JOIN User ON Message.senderid = User.userid WHERE Message.convid = @convid AND Message.timestampt < @lastmessage ORDER BY Message.timestampt DESC LIMIT 25", Database.connection);
+                selectCommand.Parameters.AddWithValue("@convid", convid);
+                selectCommand.Parameters.AddWithValue("@lastmessage", lastMessageTime);
+                using var reader = await selectCommand.ExecuteReaderAsync();
+
+                while (await reader.ReadAsync())
+                {
+                    List<string> message = new List<string>
+                    {
+                        reader.GetString(0), // Assuming the first column is convid
+                        reader.GetString(1),  // Assuming the second column is convname
+                        reader.GetString(2)
+                    };
+                    Messages.Add(message);
+                }
+
+                Console.WriteLine(string.Join(", ", Messages));
+
+                return Messages;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                throw;
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
 
 
 
