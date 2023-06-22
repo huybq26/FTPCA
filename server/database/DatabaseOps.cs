@@ -918,7 +918,7 @@ namespace DatabaseGroup
             try
             {
                 List<List<string>> Messages = new List<List<string>>();
-                using var selectCommand = new MySqlCommand("SELECT Message.messageid, User.name, Message.content, Message.timestampt FROM Message LEFT JOIN User ON Message.senderid = User.userid WHERE Message.convid = @convid AND Message.timestampt < @lastmessage ORDER BY Message.timestampt DESC LIMIT 25", Database.connection);
+                using var selectCommand = new MySqlCommand("SELECT Message.messageid, User.name, Message.content, Message.timestampt FROM Message LEFT JOIN User ON Message.senderid = User.userid WHERE Message.convid = @convid AND Message.timestampt < @lastmessage ORDER BY Message.timestampt LIMIT 25", Database.connection);
                 selectCommand.Parameters.AddWithValue("@convid", convid);
                 selectCommand.Parameters.AddWithValue("@lastmessage", lastMessageTime);
                 using var reader = await selectCommand.ExecuteReaderAsync();

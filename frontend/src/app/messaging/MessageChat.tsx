@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { UserInfo, fetchToken } from '../authentication/JwtUtils';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -6,6 +6,8 @@ import { useNavigate } from 'react-router-dom';
 interface Conversation {
 	id: number;
 	name: string;
+	lastMessage: string;
+	groupImage: string;
 }
 
 interface Message {
@@ -21,7 +23,9 @@ const MessageChat: React.FC = () => {
 	const [selectedConversation, setSelectedConversation] =
 		useState<Conversation | null>(null);
 	const [messages, setMessages] = useState<Message[]>([]);
+	const [newMessage, setNewMessage] = useState<string>('');
 	const navigate = useNavigate();
+	const messagesContainerRef = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
 		const user = fetchToken();
@@ -34,12 +38,19 @@ const MessageChat: React.FC = () => {
 		}
 	}, []);
 
+	useEffect(() => {
+		if (messagesContainerRef.current) {
+			messagesContainerRef.current.scrollTop =
+				messagesContainerRef.current.scrollHeight;
+		}
+	}, [messages]);
+
 	const fetchConversations = async (userInfo: UserInfo) => {
 		try {
 			const response = await fetch(
 				`http://localhost:5169/queryconversation?userid=${
 					userInfo?.userid
-				}&lastmessage=${new Date().toISOString()}`,
+				}&lastmessage=${getCurrentDateTime()}`,
 				{
 					method: 'GET',
 					headers: {
@@ -55,6 +66,8 @@ const MessageChat: React.FC = () => {
 					return {
 						id: item[0],
 						name: item[1],
+						lastMessage: item[2],
+						groupImage: item[3],
 					};
 				});
 				console.log(parsedResults);
@@ -67,6 +80,17 @@ const MessageChat: React.FC = () => {
 		}
 	};
 
+	const getCurrentDateTime = (): string => {
+		const currentDate = new Date();
+		const gmtPlus8Offset = 8 * 60; // GMT+8 offset in minutes
+		const gmtPlus8DateTime = new Date(
+			currentDate.getTime() + gmtPlus8Offset * 60000
+		); // Add offset in milliseconds
+		const formattedDateTime = gmtPlus8DateTime.toISOString().slice(0, 19);
+
+		return formattedDateTime;
+	};
+
 	const handleConversationClick = async (conversation: Conversation) => {
 		setSelectedConversation(conversation);
 
@@ -74,7 +98,7 @@ const MessageChat: React.FC = () => {
 			const response = await fetch(
 				`http://localhost:5169/querymessage?convid=${
 					conversation.id
-				}&lastmessagetime=${new Date().toISOString()}`,
+				}&lastmessagetime=${getCurrentDateTime()}`,
 				{
 					method: 'GET',
 					headers: {
@@ -107,8 +131,38 @@ const MessageChat: React.FC = () => {
 		}
 	};
 
+	const handleSendMessage = async () => {
+		// Add your logic to send the newMessage value
+		// and update the messages state accordingly
+		try {
+			const response = await fetch(
+				`http://localhost:5169/sendmessage?senderid=${userInfo?.userid}&convid=${selectedConversation?.id}&content=${newMessage}`,
+				{
+					method: 'POST',
+					headers: {
+						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+					},
+				}
+			);
+
+			if (response.ok) {
+				console.log('Sent message successfully!');
+			} else {
+				console.log('Error:', response.status);
+			}
+		} catch (error) {
+			console.log(`Error sending message:`, error);
+		}
+	};
+
 	return (
-		<div className='message-chat-container'>
+		<div
+			className='message-chat-container'
+			style={{
+				display: 'flex',
+				flexDirection: 'row',
+			}}
+		>
 			<div className='conversations'>
 				{conversations.map((conversation) => (
 					<div
@@ -117,21 +171,83 @@ const MessageChat: React.FC = () => {
 							selectedConversation === conversation ? 'active' : ''
 						}`}
 						onClick={() => handleConversationClick(conversation)}
+						style={{
+							display: 'flex',
+							flexDirection: 'row',
+							alignItems: 'center',
+						}}
 					>
-						{conversation.name}
+						<div className='group-image'>
+							<img src='chat.jpg' height='30px' alt='Group Image' />
+						</div>
+						<div className='conversation-details'>
+							<div className='conversation-name'>
+								<b>{conversation.name}</b>
+							</div>
+							<div className='last-message'>Contributor1: Last Message</div>
+						</div>
 					</div>
 				))}
 			</div>
-			<div className='messages'>
+			<div
+				className='messages'
+				style={{
+					marginLeft: '20px',
+					maxWidth: '100%',
+					flex: 1,
+					overflowY: 'auto',
+					maxHeight: 'calc(100vh - 20px)',
+				}}
+				ref={messagesContainerRef}
+			>
 				{selectedConversation ? (
 					<div className='conversation-messages'>
 						{messages.map((message) => (
-							<div key={message.id} className='message'>
-								<div className='message-sender'>{message.sender}</div>
+							<div
+								key={message.id}
+								className='message'
+								style={{
+									backgroundColor: '#ECE5DD',
+									marginBottom: '10px',
+									padding: '10px',
+									borderRadius: '5px',
+								}}
+							>
+								<div className='message-sender' style={{ fontWeight: 'bold' }}>
+									{message.sender}
+								</div>
 								<div className='message-content'>{message.content}</div>
-								<div className='message-timestamp'>{message.timestamp}</div>
+								<div
+									className='message-timestamp'
+									style={{ fontSize: '0.8rem', color: 'gray' }}
+								>
+									{message.timestamp}
+								</div>
 							</div>
 						))}
+						<div
+							className='message-input-container'
+							style={{
+								marginTop: '20px',
+								position: 'fixed',
+								// left: 0,
+								bottom: 0,
+								width: '100%',
+								backgroundColor: '#ffffff',
+								padding: '10px',
+							}}
+						>
+							<input
+								type='text'
+								className='message-input'
+								placeholder='Type your message...'
+								value={newMessage}
+								onChange={(e) => setNewMessage(e.target.value)}
+							/>
+							<button className='send-button' onClick={handleSendMessage}>
+								<i className='fa fa-paper-plane'></i>
+							</button>
+						</div>
 					</div>
 				) : (
 					<div className='no-conversation-selected'>
