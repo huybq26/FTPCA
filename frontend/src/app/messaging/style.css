@@ -1,0 +1,7 @@
+.conversation.active {
+	background-color: rgb(240, 240, 240);
+}
+
+.conversation:hover:not(.active) {
+	background-color: rgb(240, 240, 240);
+}

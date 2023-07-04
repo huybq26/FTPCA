@@ -19,6 +19,7 @@ const VerticalNav: React.FC<VerticalNavProps> = ({ onLogout }) => {
 		backgroundColor: '#f0f0f0',
 		display: 'flex',
 		flexDirection: 'column',
+		height: '100%',
 	};
 
 	const listItemStyle: React.CSSProperties = {

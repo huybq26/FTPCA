@@ -2,6 +2,22 @@ import React, { useState, useEffect, useRef } from 'react';
 import { UserInfo, fetchToken } from '../authentication/JwtUtils';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
+import {
+	AppBar,
+	Box,
+	IconButton,
+	InputBase,
+	Modal,
+	Paper,
+	Toolbar,
+	Typography,
+} from '@mui/material';
+import SearchIcon from '@mui/icons-material/Search';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
+import CheckIcon from '@mui/icons-material/Check';
+import ClearIcon from '@mui/icons-material/Clear';
+import './style.css';
 
 interface Conversation {
 	id: number;
@@ -50,6 +66,18 @@ const MessageChat: React.FC = () => {
 				messagesContainerRef.current.scrollHeight;
 		}
 	}, [messages]);
+
+	const modalStyle = {
+		position: 'absolute' as 'absolute',
+		top: '50%',
+		left: '50%',
+		transform: 'translate(-50%, -50%)',
+		width: 400,
+		bgcolor: 'background.paper',
+		// border: '2px solid #000',
+		boxShadow: 24,
+		p: 4,
+	};
 
 	const fetchConversations = async (userInfo: UserInfo) => {
 		try {
@@ -144,7 +172,7 @@ const MessageChat: React.FC = () => {
 		if (selectedConversation && newMessage.trim() !== '') {
 			try {
 				const response = await axios.post(
-					`http://localhost:5169/sendmessage?sender=${userInfo?.userid}&convid=${selectedConversation.id}&content=${newMessage}`,
+					`http://localhost:5169/sendmessage?senderid=${userInfo?.userid}&convid=${selectedConversation.id}&content=${newMessage}`,
 					{},
 					{
 						headers: {
@@ -156,7 +184,7 @@ const MessageChat: React.FC = () => {
 				if (response.status === 200) {
 					const newMessageObject: Message = {
 						id: response.data.messageid,
-						sender: userInfo?.userid || '',
+						sender: userInfo?.username || '',
 						content: newMessage,
 						timestamp: getCurrentDateTime(),
 					};
@@ -288,7 +316,81 @@ const MessageChat: React.FC = () => {
 				className='message-chat-container'
 				style={{ display: 'flex', flexDirection: 'row' }}
 			>
-				<div className='conversations'>
+				<div
+					className='conversations'
+					style={{
+						width: '25%',
+					}}
+				>
+					<div
+						style={{
+							display: 'flex',
+							flexDirection: 'row',
+							justifyContent: 'space-between',
+							marginTop: '10px',
+							marginLeft: '10px',
+							alignItems: 'center',
+						}}
+					>
+						<div>
+							<Typography
+								variant='h5'
+								component='h3'
+								style={{
+									fontWeight: 'bold',
+								}}
+							>
+								Chats
+							</Typography>
+						</div>
+						<div>
+							<IconButton
+								type='button'
+								aria-label='create-chat'
+								onClick={() => setShowNewChatModal(true)}
+							>
+								<AddCircleOutlineIcon />
+							</IconButton>
+						</div>
+					</div>
+
+					<div
+						style={{ display: 'flex', justifyContent: 'center', width: '100%' }}
+					>
+						<Paper
+							component='form'
+							sx={{
+								// p: '2px 4px',
+								display: 'flex',
+								alignItems: 'center',
+								width: '95%',
+								backgroundColor: '#f5f3f2',
+								marginBottom: '15px',
+								marginTop: '10px',
+								borderRadius: '10px',
+								justifyContent: 'center',
+							}}
+						>
+							<IconButton type='button' sx={{ p: '10px' }} aria-label='search'>
+								<SearchIcon />
+							</IconButton>
+							<InputBase
+								sx={{
+									ml: 1,
+									flex: 1,
+									'&::placeholder': {
+										fontSize: '14px', // Adjust the placeholder text size
+									},
+									'& input': {
+										fontSize: '14px', // Adjust the input text size
+									},
+								}}
+								placeholder='Search Conversations'
+								inputProps={{ 'aria-label': 'Search Conversations' }}
+							/>
+						</Paper>
+					</div>
+
 					{conversations.map((conversation) => (
 						<div
 							key={conversation.id}
@@ -300,29 +402,42 @@ const MessageChat: React.FC = () => {
 								display: 'flex',
 								flexDirection: 'row',
 								alignItems: 'center',
+								marginLeft: '5px',
+								cursor: 'pointer',
+								borderRadius: '5px',
+								height: '55px',
+								// backgroundColor:
+								// 	selectedConversation === conversation ? '#f0f0f0' : 'initial',
 							}}
 						>
-							<div className='group-image'>
+							<div className='group-image' style={{ marginLeft: '5px' }}>
 								<img
-									src={conversation.groupImage}
+									// src={conversation.groupImage}
+									src='./chat.jpg'
 									height='30px'
 									alt='Group Image'
 								/>
 							</div>
-							<div className='conversation-details'>
-								<div className='conversation-name'>
-									<b>{conversation.name}</b>
+							<div
+								className='conversation-details'
+								style={{ marginLeft: '3px' }}
+							>
+								<div
+									className='conversation-name'
+									style={{ fontSize: 18, fontWeight: 500 }}
+								>
+									{conversation.name}
 								</div>
-								<div className='last-message'>{conversation.lastMessage}</div>
+								{/* <div className='last-message'>{conversation.lastMessage}</div> */}
+								<div
+									className='last-message'
+									style={{ fontWeight: 300, fontSize: 14, color: 'gray' }}
+								>
+									Lorem ipsum: asdfa sdafsdf a
+								</div>
 							</div>
 						</div>
 					))}
-					<div
-						className='create-chat-button'
-						onClick={() => setShowNewChatModal(true)}
-					>
-						Create Chat
-					</div>
 				</div>
 				<div
 					className='messages'
@@ -337,6 +452,34 @@ const MessageChat: React.FC = () => {
 				>
 					{selectedConversation ? (
 						<div className='conversation-messages'>
+							<AppBar position='sticky'>
+								<Toolbar>
+									{selectedConversation && (
+										<>
+											<div className='group-image'>
+												<img
+													// src={selectedConversation.groupImage}
+													src='./chat.jpg'
+													height='30px'
+													alt='Group Image'
+												/>
+											</div>
+											<Typography
+												variant='h6'
+												style={{ flexGrow: 1, marginLeft: '10px' }}
+											>
+												{selectedConversation.name}
+											</Typography>
+										</>
+									)}
+									<IconButton color='inherit'>
+										<SearchIcon />
+									</IconButton>
+									<IconButton color='inherit'>
+										<MoreVertIcon />
+									</IconButton>
+								</Toolbar>
+							</AppBar>
 							{messages.map((message) => (
 								<div
 									key={message.id}
@@ -389,28 +532,27 @@ const MessageChat: React.FC = () => {
 						<h2>Select a Conversation</h2>
 					)}
 				</div>
-				{selectedConversation && (
-					<div className='chat-footer'>
-						<input
-							type='text'
-							placeholder='Type a message...'
-							value={newMessage}
-							onChange={handleNewMessageChange}
-						/>
-						<button onClick={handleSendMessage}>Send</button>
-					</div>
-				)}
 			</div>
 			<div>
 				{showNewChatModal && (
-					<div className='new-chat-modal'>
-						<div className='modal-content'>
+					<Modal
+						open={showNewChatModal}
+						onClose={() => setShowNewChatModal(false)}
+						aria-labelledby='modal-modal-title'
+						aria-describedby='modal-modal-description'
+					>
+						<Box sx={modalStyle}>
 							<h2>Create New Chat</h2>
 							<input
 								type='text'
 								placeholder='Chat Name'
 								value={newChatName}
 								onChange={handleNewChatNameChange}
+								style={{
+									borderRadius: '5px',
+									height: '25px',
+									marginBottom: '10px',
+								}}
 							/>
 							<div className='search-users'>
 								<input
@@ -418,42 +560,84 @@ const MessageChat: React.FC = () => {
 									placeholder='Search Users'
 									value={searchQuery}
 									onChange={handleSearchQueryChange}
+									style={{
+										borderRadius: '5px',
+										height: '25px',
+										marginBottom: '10px',
+										marginRight: '5px',
+									}}
 								/>
 								<button onClick={handleSearchUsers}>Search</button>
 								{searchedUsers.length > 0 && (
 									<ul>
 										{searchedUsers.map((user) => (
-											<li
-												key={user.userid}
-												onClick={() => handleUserClick(user)}
+											<div
+												style={{
+													display: 'flex',
+													flexDirection: 'row',
+													alignItems: 'center',
+													gap: '5px',
+												}}
 											>
-												{user.username}
-											</li>
+												<li
+													className='li-create'
+													key={user.userid}
+													onClick={() => handleUserClick(user)}
+													style={{ cursor: 'pointer' }}
+												>
+													{user.username}
+												</li>
+
+												<IconButton
+													color='inherit'
+													onClick={() => handleUserClick(user)}
+													style={{}}
+												>
+													<CheckIcon />
+												</IconButton>
+											</div>
 										))}
 									</ul>
 								)}
 							</div>
+
 							<div className='selected-users'>
 								<h3>Selected Users:</h3>
 								<ul>
 									{selectedUsers.map((user) => (
-										<li key={user.userid}>
-											{user.username}
-											<button onClick={() => handleRemoveUser(user)}>
-												Remove
-											</button>
+										<li key={user.userid} style={{ marginBottom: '5px' }}>
+											<div
+												style={{
+													display: 'flex',
+													flexDirection: 'row',
+													gap: '5px',
+													alignItems: 'center',
+												}}
+											>
+												{user.username}
+												<IconButton
+													color='inherit'
+													onClick={() => handleRemoveUser(user)}
+													style={{}}
+												>
+													<ClearIcon />
+												</IconButton>
+											</div>
 										</li>
 									))}
 								</ul>
 							</div>
-							<div className='create-chat-buttons'>
+							<div
+								className='create-chat-buttons'
+								style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}
+							>
 								<button onClick={handleCreateChat}>Create</button>
 								<button onClick={() => setShowNewChatModal(false)}>
 									Cancel
 								</button>
 							</div>
-						</div>
-					</div>
+						</Box>
+					</Modal>
 				)}
 			</div>
 		</div>
