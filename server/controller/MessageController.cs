@@ -3,6 +3,9 @@ using Microsoft.AspNetCore.Mvc;
 using UserGroup;
 using DatabaseGroup;
 using System;
+using Microsoft.AspNetCore.SignalR;
+using System.Threading.Tasks;
+using SignalRChat.Hubs;
 
 namespace MessageControllerGroup
 {
@@ -157,6 +160,7 @@ namespace MessageControllerGroup
             {
                 Console.WriteLine(senderid.ToString() + " " + convid + " to " + content);
                 await Database.SendMessage(senderid, convid, content);
+                // await ChatHub.SendMessageHub(senderid.ToString(), content);
                 return Ok(new
                 {
                     Message = "Send message successfully",

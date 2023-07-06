@@ -18,6 +18,7 @@ import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
 import './style.css';
+import * as signalR from '@microsoft/signalr';
 
 interface Conversation {
 	id: number;
@@ -48,6 +49,42 @@ const MessageChat: React.FC = () => {
 
 	const navigate = useNavigate();
 	const messagesContainerRef = useRef<HTMLDivElement>(null);
+
+	const [connection, setConnection] = useState<signalR.HubConnection | null>(
+		null
+	);
+
+	useEffect(() => {
+		const newConnection = new signalR.HubConnectionBuilder()
+			.withUrl('http://localhost:5169/chatHub') // Specify the hub URL
+			.build();
+
+		setConnection(newConnection);
+	}, []);
+
+	useEffect(() => {
+		if (connection) {
+			connection
+				.start()
+				.then(() => {
+					console.log('Connected to SignalR hub');
+
+					// Subscribe to the 'ReceiveMessage' event from the hub
+					connection.on('ReceiveMessage', (sender: string, message: string) => {
+						setMessages((prevMessages) => [
+							...prevMessages,
+							{
+								id: prevMessages.length + 1,
+								sender,
+								content: message,
+								timestamp: getCurrentDateTime(),
+							},
+						]);
+					});
+				})
+				.catch((error) => console.error('SignalR connection error:', error));
+		}
+	}, [connection]);
 
 	useEffect(() => {
 		const user = fetchToken();
@@ -188,6 +225,13 @@ const MessageChat: React.FC = () => {
 						content: newMessage,
 						timestamp: getCurrentDateTime(),
 					};
+					if (connection) {
+						connection
+							.invoke('SendMessage', userInfo?.username, newMessage)
+							.catch((error) =>
+								console.error('SignalR sendMessage error:', error)
+							);
+					}
 
 					setMessages([...messages, newMessageObject]);
 					setNewMessage('');

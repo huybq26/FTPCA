@@ -5,6 +5,7 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import PersonIcon from '@mui/icons-material/Person';
 import GroupIcon from '@mui/icons-material/Group';
 import SearchIcon from '@mui/icons-material/Search';
+import MessageIcon from '@mui/icons-material/Message';
 import { useNavigate } from 'react-router-dom';
 
 interface VerticalNavProps {
@@ -15,7 +16,7 @@ const VerticalNav: React.FC<VerticalNavProps> = ({ onLogout }) => {
 	const navigate = useNavigate();
 
 	const navStyle: React.CSSProperties = {
-		width: '60px',
+		width: '55px',
 		backgroundColor: '#f0f0f0',
 		display: 'flex',
 		flexDirection: 'column',
@@ -24,17 +25,20 @@ const VerticalNav: React.FC<VerticalNavProps> = ({ onLogout }) => {
 
 	const listItemStyle: React.CSSProperties = {
 		display: 'flex',
+		flexDirection: 'row',
 		justifyContent: 'center',
 		alignItems: 'center',
-		height: '60px',
+		height: '55px',
+		borderRadius: '10px',
 	};
 
 	const logoutItemStyle: React.CSSProperties = {
 		display: 'flex',
 		justifyContent: 'center',
 		alignItems: 'center',
-		height: '60px',
+		height: '55px',
 		cursor: 'pointer',
+		borderRadius: '10px',
 	};
 
 	const handleLogout = () => {
@@ -46,13 +50,18 @@ const VerticalNav: React.FC<VerticalNavProps> = ({ onLogout }) => {
 	return (
 		<div style={navStyle}>
 			<List component='nav'>
+				<ListItem button component={Link} to='/message' style={listItemStyle}>
+					<ListItemIcon style={{ display: 'flex', justifyContent: 'center' }}>
+						<MessageIcon style={{ alignSelf: 'center' }} />
+					</ListItemIcon>
+				</ListItem>
 				<ListItem
 					button
 					component={Link}
 					to='/friendlist'
 					style={listItemStyle}
 				>
-					<ListItemIcon>
+					<ListItemIcon style={{ display: 'flex', justifyContent: 'center' }}>
 						<GroupIcon />
 					</ListItemIcon>
 				</ListItem>
@@ -62,7 +71,7 @@ const VerticalNav: React.FC<VerticalNavProps> = ({ onLogout }) => {
 					to='/friendrequest'
 					style={listItemStyle}
 				>
-					<ListItemIcon>
+					<ListItemIcon style={{ display: 'flex', justifyContent: 'center' }}>
 						<PersonIcon />
 					</ListItemIcon>
 				</ListItem>
@@ -72,12 +81,12 @@ const VerticalNav: React.FC<VerticalNavProps> = ({ onLogout }) => {
 					to='/searchfriend'
 					style={listItemStyle}
 				>
-					<ListItemIcon>
+					<ListItemIcon style={{ display: 'flex', justifyContent: 'center' }}>
 						<SearchIcon />
 					</ListItemIcon>
 				</ListItem>
 				<ListItem button onClick={handleLogout} style={logoutItemStyle}>
-					<ListItemIcon>
+					<ListItemIcon style={{ display: 'flex', justifyContent: 'center' }}>
 						<ExitToAppIcon />
 					</ListItemIcon>
 				</ListItem>

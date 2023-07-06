@@ -1,11 +1,37 @@
 {
   "Version": 1,
-  "Hash": "sS6BjW5R4Utq6lPt8ju7XruGa+gigwaPD6Wu2GHjr4U=",
+  "Hash": "uG9lY1W6E6SVlM+77hidL67edo+ocmnh+DAUP3Snb6k=",
   "Source": "MyProject",
   "BasePath": "_content/MyProject",
   "Mode": "Default",
   "ManifestType": "Build",
   "ReferencedProjectsConfiguration": [],
-  "DiscoveryPatterns": [],
-  "Assets": []
+  "DiscoveryPatterns": [
+    {
+      "Name": "MyProject/wwwroot",
+      "Source": "MyProject",
+      "ContentRoot": "/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/wwwroot/",
+      "BasePath": "_content/MyProject",
+      "Pattern": "**"
+    }
+  ],
+  "Assets": [
+    {
+      "Identity": "/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/wwwroot/js/signalr/dist/browser/signalr.js",
+      "SourceId": "MyProject",
+      "SourceType": "Discovered",
+      "ContentRoot": "/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/wwwroot/",
+      "BasePath": "_content/MyProject",
+      "RelativePath": "js/signalr/dist/browser/signalr.js",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/js/signalr/dist/browser/signalr.js"
+    }
+  ]
 }

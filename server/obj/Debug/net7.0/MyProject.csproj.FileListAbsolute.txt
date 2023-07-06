@@ -78,3 +78,5 @@
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/System.Web.Http.Cors.dll
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Newtonsoft.Json.dll
 /home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/Newtonsoft.Json.Bson.dll
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/libman.json
+/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/bin/Debug/net7.0/MyProject.staticwebassets.runtime.json
