@@ -45,7 +45,8 @@ namespace DatabaseGroup
         convid VARCHAR(36) PRIMARY KEY,
         convname varchar(255) NOT NULL,
         creationtime DATETIME NOT NULL,
-        lastmessage DATETIME NOT NULL
+        lastmessage varchar(1000),
+        lastsender INT,
     )", connection);
             await commandConv.ExecuteNonQueryAsync();
 
@@ -830,7 +831,7 @@ namespace DatabaseGroup
             }
         }
 
-        public static async Task SendMessage(int senderid, string convid, string content)
+        public static async Task SendMessage(int senderid, string convid, string content, string fileId)
         {
             // Check if the sender is a participant of the conversation
             Database.connection = await DbConnection.GetDbConnection();
@@ -864,18 +865,20 @@ namespace DatabaseGroup
 
                 try
                 {
-                    using var insertCommand = new MySqlCommand("INSERT INTO Message (messageid, convid, senderid, content, timestampt) VALUES (@messageid, @convid, @senderid, @content, @timestampt)", transaction.Connection);
+                    using var insertCommand = new MySqlCommand("INSERT INTO Message (messageid, convid, senderid, content, fileid, timestampt) VALUES (@messageid, @convid, @senderid, @content, @fileid, @timestampt)", transaction.Connection);
                     Guid uuid = Guid.NewGuid();
                     string uuidString = uuid.ToString();
                     insertCommand.Parameters.AddWithValue("@messageid", uuidString);
                     insertCommand.Parameters.AddWithValue("@convid", convid);
                     insertCommand.Parameters.AddWithValue("@senderid", senderid);
                     insertCommand.Parameters.AddWithValue("@content", content);
+                    insertCommand.Parameters.AddWithValue("@fileid", fileId);
                     insertCommand.Parameters.AddWithValue("@timestampt", DateTime.Now);
                     await insertCommand.ExecuteNonQueryAsync();
 
-                    using var updateCommand = new MySqlCommand("UPDATE Conversation SET lastmessage = @lastmessage WHERE convid = @convid", transaction.Connection);
+                    using var updateCommand = new MySqlCommand("UPDATE Conversation SET lastmessage = @lastmessage AND lastsender=@lastsender WHERE convid = @convid", transaction.Connection);
                     updateCommand.Parameters.AddWithValue("@lastmessage", DateTime.Now);
+                    updateCommand.Parameters.AddWithValue("@lastsender", senderid);
                     updateCommand.Parameters.AddWithValue("@convid", convid);
 
                     await updateCommand.ExecuteNonQueryAsync();
@@ -953,8 +956,34 @@ namespace DatabaseGroup
             }
         }
 
+        public static async Task UploadFile(string fileid, string filename, string filepath, int filesize, string filetype)
+        {
+            Database.connection = await DbConnection.GetDbConnection();
 
+            try
+            {
+                using var insertCommand = new MySqlCommand("INSERT INTO File VALUES (@fileid, @filename, @filepath, @filesize, @filetype)", Database.connection);
+                insertCommand.Parameters.AddWithValue("@fileid", fileid);
+                insertCommand.Parameters.AddWithValue("@filename", filename);
+                insertCommand.Parameters.AddWithValue("@filepath", filepath);
+                insertCommand.Parameters.AddWithValue("@filesize", filesize);
+                insertCommand.Parameters.AddWithValue("@filetype", filetype);
+                await insertCommand.ExecuteNonQueryAsync();
 
+            }
+            catch (Exception ex)
+            {
+                // Handle any exceptions and roll back the transaction
+                Console.WriteLine("An error occurred: " + ex.Message);
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
 
     }
 

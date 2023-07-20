@@ -153,13 +153,13 @@ namespace MessageControllerGroup
         [HttpPost]
         [Authorize]
         [Route("sendmessage")]
-        public async Task<IActionResult> SendMessage(int senderid, string convid, string content)
+        public async Task<IActionResult> SendMessage(int senderid, string convid, string content, string fileId)
         {
             // participantLists is the list of userid separated by comma
             try
             {
-                Console.WriteLine(senderid.ToString() + " " + convid + " to " + content);
-                await Database.SendMessage(senderid, convid, content);
+                Console.WriteLine(senderid.ToString() + " " + convid + " to " + content + " file " + fileId);
+                await Database.SendMessage(senderid, convid, content, fileId);
                 // await ChatHub.SendMessageHub(senderid.ToString(), content);
                 return Ok(new
                 {
@@ -200,6 +200,50 @@ namespace MessageControllerGroup
                     Message = "Failed to retrieve messages: " + ex.Message,
                 });
             }
+        }
+
+
+        [HttpPost]
+        // [Authorize]
+        [Route("upload")]
+        public async Task<IActionResult> Upload(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+            {
+                return BadRequest("No file was uploaded.");
+            }
+
+            try
+            {
+                string fileId = Guid.NewGuid().ToString();
+                string uniqueFileName = fileId + "_" + file.FileName;
+                int fileSizeInBytes = (int)file.Length;
+                string fileType = file.ContentType;
+
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", uniqueFileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(stream);
+                }
+
+                await Database.UploadFile(fileId, file.FileName, (string)filePath, fileSizeInBytes, fileType);
+
+                return Ok(new
+                {
+                    Message = "Upload file successfully!",
+                    Data = (string)filePath
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Failed to upload file: " + ex.Message,
+                });
+            }
+
+
         }
 
 
