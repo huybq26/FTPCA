@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { UserInfo, fetchToken } from '../authentication/JwtUtils';
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
@@ -23,8 +23,10 @@ import * as signalR from '@microsoft/signalr';
 interface Conversation {
 	id: number;
 	name: string;
+	lastSender: string;
 	lastMessage: string;
 	groupImage: string;
+	creator: string;
 }
 
 interface Message {
@@ -32,6 +34,10 @@ interface Message {
 	sender: string;
 	content: string;
 	timestamp: string;
+	fileid: string | null;
+	filename: string | null;
+	filepath: string | null;
+	filetype: string | null;
 }
 
 const MessageChat: React.FC = () => {
@@ -53,38 +59,40 @@ const MessageChat: React.FC = () => {
 	const [connection, setConnection] = useState<signalR.HubConnection | null>(
 		null
 	);
+	const [file, setFile] = useState<File | null>(null);
 
-	useEffect(() => {
-		const newConnection = new signalR.HubConnectionBuilder()
-			.withUrl('http://localhost:5169/chatHub') // Specify the hub URL
-			.build();
+	// useEffect(() => {
+	// 	const newConnection = new signalR.HubConnectionBuilder()
+	// 		.withUrl('http://localhost:5169/chatHub') // Specify the hub URL
+	// 		.build();
 
-		setConnection(newConnection);
-	}, []);
+	// 	setConnection(newConnection);
+	// }, []);
 
-	useEffect(() => {
-		if (connection) {
-			connection
-				.start()
-				.then(() => {
-					console.log('Connected to SignalR hub');
+	// useEffect(() => {
+	// 	if (connection) {
+	// 		connection
+	// 			.start()
+	// 			.then(() => {
+	// 				console.log('Connected to SignalR hub');
 
-					// Subscribe to the 'ReceiveMessage' event from the hub
-					connection.on('ReceiveMessage', (sender: string, message: string) => {
-						setMessages((prevMessages) => [
-							...prevMessages,
-							{
-								id: prevMessages.length + 1,
-								sender,
-								content: message,
-								timestamp: getCurrentDateTime(),
-							},
-						]);
-					});
-				})
-				.catch((error) => console.error('SignalR connection error:', error));
-		}
-	}, [connection]);
+	// 				// Subscribe to the 'ReceiveMessage' event from the hub
+	// 				connection.on('ReceiveMessage', (sender: string, message: string) => {
+	// 					setMessages((prevMessages) => [
+	// 						...prevMessages,
+	// 						{
+	// 							id: prevMessages.length + 1,
+	// 							sender,
+	// 							content: message,
+	// 							timestamp: getCurrentDateTime(),
+	// 							fileid
+	// 						},
+	// 					]);
+	// 				});
+	// 			})
+	// 			.catch((error) => console.error('SignalR connection error:', error));
+	// 	}
+	// }, [connection]);
 
 	useEffect(() => {
 		const user = fetchToken();
@@ -137,8 +145,10 @@ const MessageChat: React.FC = () => {
 					return {
 						id: item[0],
 						name: item[1],
+						creator: userInfo?.name ?? '',
 						lastMessage: item[2],
-						groupImage: item[3],
+						groupImage: '',
+						lastSender: item[3],
 					};
 				});
 				console.log(parsedResults);
@@ -181,14 +191,56 @@ const MessageChat: React.FC = () => {
 			if (response.ok) {
 				const data: any = await response.json();
 				console.log('Get successful:', data);
-				const parsedResults: Message[] = data.data.map((item: any) => {
-					return {
-						id: item[0],
-						sender: item[1],
-						content: item[2],
-						timestamp: item[3],
-					};
-				});
+				const parsedResults: Message[] = await Promise.all(
+					data.data.map(async (item: any) => {
+						let fileid = item[4];
+						console.log(fileid);
+						if (fileid !== 'null') {
+							try {
+								const fileResponse = await fetch(
+									`http://localhost:5169/getfile?fileid=${fileid}`,
+									{
+										method: 'GET',
+										headers: {
+											Authorization: `Bearer ${sessionStorage.getItem(
+												'jwtToken'
+											)}`,
+										},
+									}
+								);
+
+								if (fileResponse.ok) {
+									const fileData: any = await fileResponse.json();
+									console.log('File detected');
+									console.log(fileData.data);
+
+									return {
+										id: item[0],
+										sender: item[1],
+										content: item[2],
+										timestamp: item[3],
+										fileid: item[4],
+										filename: fileData.data[1],
+										filepath: fileData.data[2],
+										filetype: fileData.data[4],
+									};
+								} else {
+									console.log('Error:', fileResponse.status);
+								}
+							} catch (e) {
+								console.log('An error occurred while fetching file:', e);
+							}
+						}
+
+						return {
+							id: item[0],
+							sender: item[1],
+							content: item[2],
+							timestamp: item[3],
+							fileid: item[4],
+						};
+					})
+				);
 				console.log(parsedResults);
 				setMessages(parsedResults);
 			} else {
@@ -205,11 +257,101 @@ const MessageChat: React.FC = () => {
 		setNewMessage(event.target.value);
 	};
 
+	const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+		const selectedFile = e.target.files?.[0];
+		if (selectedFile) {
+			setFile(selectedFile);
+		}
+	};
+
+	const handleUpload = async () => {
+		if (file) {
+			try {
+				const formData = new FormData();
+				formData.append('file', file);
+
+				const response = await axios.post(
+					'http://localhost:5169/upload',
+					formData,
+					{
+						headers: { 'Content-Type': 'multipart/form-data' },
+					}
+				);
+
+				if (response.status === 200) {
+					console.log(response.data.data);
+					let fileId = response.data.data.fileId; // Handle the response from the backend if needed
+					let fileName = response.data.data.fileName;
+					let filePath = response.data.data.filePath;
+					let fileType = response.data.data.fileType;
+
+					// send message with file (without content)
+					if (selectedConversation) {
+						console.log('Sending message with file');
+						try {
+							const response = await axios.post(
+								`http://localhost:5169/sendmessage?senderid=${userInfo?.userid}&convid=${selectedConversation.id}&fileid=${fileId}&content=Sent a file`,
+								{},
+								{
+									headers: {
+										Authorization: `Bearer ${sessionStorage.getItem(
+											'jwtToken'
+										)}`,
+									},
+								}
+							);
+
+							if (response.status === 200) {
+								const newMessageObject: Message = {
+									id: response.data.messageid,
+									sender: userInfo?.username || '',
+									content: fileName,
+									timestamp: getCurrentDateTime(),
+									fileid: fileId,
+									filename: fileName,
+									filepath: filePath,
+									filetype: fileType,
+								};
+								// SignalR part
+								// if (connection) {
+								// 	connection
+								// 		.invoke('SendMessage', userInfo?.username, fileName)
+								// 		.catch((error) =>
+								// 			console.error('SignalR sendMessage error:', error)
+								// 		);
+								// }
+
+								setMessages([...messages, newMessageObject]);
+								setNewMessage('');
+								let updateConversation = selectedConversation;
+								updateConversation.lastMessage = 'Sent a file';
+								updateConversation.lastSender = userInfo?.name ?? '';
+								setSelectedConversation(updateConversation);
+							} else {
+								console.log('Error:', response.status);
+							}
+						} catch (error) {
+							console.log('An error occurred:', error);
+						}
+					}
+				}
+			} catch (error) {
+				console.error(error);
+			}
+		} else {
+			console.log('Please select a file first.');
+		}
+	};
+
 	const handleSendMessage = async () => {
 		if (selectedConversation && newMessage.trim() !== '') {
 			try {
 				const response = await axios.post(
-					`http://localhost:5169/sendmessage?senderid=${userInfo?.userid}&convid=${selectedConversation.id}&content=${newMessage}`,
+					`http://localhost:5169/sendmessage?senderid=${
+						userInfo?.userid
+					}&convid=${
+						selectedConversation.id
+					}&fileid=${null}&content=${newMessage}`,
 					{},
 					{
 						headers: {
@@ -224,6 +366,10 @@ const MessageChat: React.FC = () => {
 						sender: userInfo?.username || '',
 						content: newMessage,
 						timestamp: getCurrentDateTime(),
+						fileid: 'null',
+						filename: 'null',
+						filepath: 'null',
+						filetype: 'null',
 					};
 					if (connection) {
 						connection
@@ -235,6 +381,10 @@ const MessageChat: React.FC = () => {
 
 					setMessages([...messages, newMessageObject]);
 					setNewMessage('');
+					let updateConversation = selectedConversation;
+					updateConversation.lastMessage = newMessage;
+					updateConversation.lastSender = userInfo?.name ?? '';
+					setSelectedConversation(updateConversation);
 				} else {
 					console.log('Error:', response.status);
 				}
@@ -321,7 +471,9 @@ const MessageChat: React.FC = () => {
 		if (newChatName.trim() !== '' && selectedUsers.length > 0) {
 			try {
 				const response = await fetch(
-					`http://localhost:5169/createconv?convname=${newChatName}&participantList=${selectedUsers
+					`http://localhost:5169/createconv?convname=${newChatName}&creator=${
+						userInfo?.name
+					}&participantList=${selectedUsers
 						.map((user) => user.userid)
 						.toString()}`,
 					{
@@ -337,8 +489,10 @@ const MessageChat: React.FC = () => {
 					const newConversation: Conversation = {
 						id: data.convid,
 						name: newChatName,
-						lastMessage: '',
+						creator: userInfo?.name ?? '',
+						lastMessage: 'Created group ' + newChatName,
 						groupImage: '',
+						lastSender: userInfo?.name ?? '',
 					};
 
 					setConversations([...conversations, newConversation]);
@@ -477,7 +631,7 @@ const MessageChat: React.FC = () => {
 									className='last-message'
 									style={{ fontWeight: 300, fontSize: 14, color: 'gray' }}
 								>
-									Lorem ipsum: asdfa sdafsdf a
+									{conversation.lastSender}: {conversation.lastMessage}
 								</div>
 							</div>
 						</div>
@@ -541,7 +695,37 @@ const MessageChat: React.FC = () => {
 									>
 										{message.sender}
 									</div>
-									<div className='message-content'>{message.content}</div>
+									<div className='message-content'>
+										{message.fileid !== 'null' ? (
+											// Check if the file type is an image (you can customize this check based on actual image MIME types)
+											message.filetype?.startsWith('image/') ? (
+												<img
+													src={`http://localhost:5169/Uploads/${
+														message.filename
+															? message.fileid + '_' + message.filename
+															: ''
+													}`}
+													alt={message.filename ?? ''}
+													style={{ maxHeight: '300px', maxWidth: '100%' }} // Set appropriate height
+												/>
+											) : (
+												<a
+													href={`http://localhost:5169/Uploads/${
+														message.filename
+															? message.fileid + '_' + message.filename
+															: ''
+													}`}
+													download
+													target='_blank'
+													rel='noopener noreferrer'
+												>
+													{message.filename}
+												</a>
+											)
+										) : (
+											message.content
+										)}
+									</div>
 									<div
 										className='message-timestamp'
 										style={{ fontSize: '0.8rem', color: 'gray' }}
@@ -550,6 +734,7 @@ const MessageChat: React.FC = () => {
 									</div>
 								</div>
 							))}
+
 							<div
 								className='message-input-container'
 								style={{
@@ -560,8 +745,14 @@ const MessageChat: React.FC = () => {
 									width: '100%',
 									backgroundColor: '#ffffff',
 									padding: '10px',
+									display: 'flex',
+									flexDirection: 'row',
 								}}
 							>
+								<div>
+									<input type='file' onChange={handleFileChange} />
+									<button onClick={handleUpload}>Upload File</button>
+								</div>
 								<input
 									type='text'
 									className='message-input'

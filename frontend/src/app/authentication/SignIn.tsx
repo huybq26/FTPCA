@@ -64,7 +64,7 @@ export const SignIn: React.FC<SignInProps> = ({
 		let result = await AuthService.loginUser(username, rawPassword);
 		if (result) {
 			onLoginSuccess();
-			navigate('/landing');
+			navigate('/message');
 		}
 	};
 

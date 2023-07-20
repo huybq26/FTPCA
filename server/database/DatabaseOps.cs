@@ -41,12 +41,14 @@ namespace DatabaseGroup
             // await insertCommand.ExecuteNonQueryAsync();
 
             using var commandConv = new MySqlCommand(@"
-    CREATE TABLE IF NOT EXISTS Conversation (
+      CREATE TABLE IF NOT EXISTS Conversation (
         convid VARCHAR(36) PRIMARY KEY,
         convname varchar(255) NOT NULL,
         creationtime DATETIME NOT NULL,
-        lastmessage varchar(1000),
-        lastsender INT,
+        lastmessage DATETIME NOT NULL,
+        lastsender VARCHAR(255),
+        lastmessagecontent VARCHAR(1000),
+        creator INT
     )", connection);
             await commandConv.ExecuteNonQueryAsync();
 
@@ -201,7 +203,7 @@ namespace DatabaseGroup
 
         public static async Task<List<string>> GetUserDetailsFromId(int id)
         {
-            List<string> results = new List<string>();
+            List<string> temp = new List<string>();
             Database.connection = await DbConnection.GetDbConnection();
 
             try
@@ -213,18 +215,16 @@ namespace DatabaseGroup
 
                 while (await reader.ReadAsync())
                 {
-                    List<string> temp = new List<string>();
+
                     temp.Add(reader.GetInt32(0).ToString());
                     temp.Add(reader.GetString(1));
                     temp.Add(reader.GetString(2));
                     temp.Add(reader.GetString(3));
                     temp.Add(reader.GetString(4));
-                    results.Add(string.Join(",", temp));
                 }
 
-                Console.WriteLine(string.Join(";", results));
 
-                return results;
+                return temp;
             }
             catch (Exception ex)
             {
@@ -650,12 +650,12 @@ namespace DatabaseGroup
             }
         }
 
-        public static async Task<string> CreateConversation(string convname, List<int> participants)
+        public static async Task<string> CreateConversation(string convname, List<int> participants, string creator)
         {
             Database.connection = await DbConnection.GetDbConnection();
             try
             {
-                using var insertCommand = new MySqlCommand("INSERT INTO Conversation (convid, convname, creationtime, lastmessage) VALUES (@convid, @convname, @creationtime, @lastmessage)", Database.connection);
+                using var insertCommand = new MySqlCommand("INSERT INTO Conversation (convid, convname, creationtime, lastmessage, lastsender, lastmessagecontent, creator) VALUES (@convid, @convname, @creationtime, @lastmessage, @lastsender, @lastmessagecontent, @creator)", Database.connection);
                 Guid uuid = Guid.NewGuid();
                 string uuidString = uuid.ToString();
 
@@ -663,6 +663,9 @@ namespace DatabaseGroup
                 insertCommand.Parameters.AddWithValue("@convname", convname);
                 insertCommand.Parameters.AddWithValue("@creationtime", DateTime.Now);
                 insertCommand.Parameters.AddWithValue("@lastmessage", DateTime.Now);
+                insertCommand.Parameters.AddWithValue("@lastsender", creator);
+                insertCommand.Parameters.AddWithValue("@lastmessage", "Created group " + convname);
+                insertCommand.Parameters.AddWithValue("@creator", creator);
 
                 await insertCommand.ExecuteNonQueryAsync();
 
@@ -718,7 +721,7 @@ namespace DatabaseGroup
             try
             {
                 List<List<string>> Conversations = new List<List<string>>();
-                using var selectCommand = new MySqlCommand("SELECT Conversation.convid, Conversation.convname FROM Conversation LEFT JOIN Conv_Parti ON Conv_Parti.convid = Conversation.convid WHERE Conversation.lastmessage < @lastmessage AND userid = @userid ORDER BY Conversation.lastmessage DESC LIMIT 25", Database.connection);
+                using var selectCommand = new MySqlCommand("SELECT c.convid, c.convname, c.lastmessagecontent, c.lastsender FROM Conversation as c LEFT JOIN Conv_Parti ON Conv_Parti.convid = c.convid WHERE c.lastmessage < @lastmessage AND userid = @userid ORDER BY c.lastmessage DESC LIMIT 25", Database.connection);
 
                 selectCommand.Parameters.AddWithValue("@lastmessage", lastMessageTime);
                 selectCommand.Parameters.AddWithValue("@userid", userid);
@@ -730,7 +733,9 @@ namespace DatabaseGroup
                     List<string> conversation = new List<string>
                     {
                         reader.GetString(0), // Assuming the first column is convid
-                        reader.GetString(1)  // Assuming the second column is convname
+                        reader.IsDBNull(1) ? "Chat name":reader.GetString(1),  // Assuming the second column is convname
+                        reader.IsDBNull(2) ? "Sent a message": reader.GetString(2),
+                        reader.IsDBNull(3) ? "User":reader.GetString(3),
                     };
                     Conversations.Add(conversation);
                 }
@@ -863,11 +868,15 @@ namespace DatabaseGroup
                 // Sender is a participant, proceed with inserting the message
                 using var transaction = Database.connection.BeginTransaction();
 
+
                 try
                 {
                     using var insertCommand = new MySqlCommand("INSERT INTO Message (messageid, convid, senderid, content, fileid, timestampt) VALUES (@messageid, @convid, @senderid, @content, @fileid, @timestampt)", transaction.Connection);
                     Guid uuid = Guid.NewGuid();
                     string uuidString = uuid.ToString();
+                    List<string> userdetails = await GetUserDetailsFromId(senderid);
+                    string sendername = userdetails[3];
+
                     insertCommand.Parameters.AddWithValue("@messageid", uuidString);
                     insertCommand.Parameters.AddWithValue("@convid", convid);
                     insertCommand.Parameters.AddWithValue("@senderid", senderid);
@@ -876,9 +885,10 @@ namespace DatabaseGroup
                     insertCommand.Parameters.AddWithValue("@timestampt", DateTime.Now);
                     await insertCommand.ExecuteNonQueryAsync();
 
-                    using var updateCommand = new MySqlCommand("UPDATE Conversation SET lastmessage = @lastmessage AND lastsender=@lastsender WHERE convid = @convid", transaction.Connection);
+                    using var updateCommand = new MySqlCommand("UPDATE Conversation SET lastmessage = @lastmessage, lastsender=@lastsender, lastmessagecontent = @lastmessagecontent WHERE convid = @convid", transaction.Connection);
                     updateCommand.Parameters.AddWithValue("@lastmessage", DateTime.Now);
-                    updateCommand.Parameters.AddWithValue("@lastsender", senderid);
+                    updateCommand.Parameters.AddWithValue("@lastsender", sendername);
+                    updateCommand.Parameters.AddWithValue("@lastmessagecontent", content);
                     updateCommand.Parameters.AddWithValue("@convid", convid);
 
                     await updateCommand.ExecuteNonQueryAsync();
@@ -921,7 +931,7 @@ namespace DatabaseGroup
             try
             {
                 List<List<string>> Messages = new List<List<string>>();
-                using var selectCommand = new MySqlCommand("SELECT Message.messageid, User.name, Message.content, Message.timestampt FROM Message LEFT JOIN User ON Message.senderid = User.userid WHERE Message.convid = @convid AND Message.timestampt < @lastmessage ORDER BY Message.timestampt LIMIT 25", Database.connection);
+                using var selectCommand = new MySqlCommand("SELECT Message.messageid, User.name, Message.content, Message.timestampt, Message.fileid FROM Message LEFT JOIN User ON Message.senderid = User.userid WHERE Message.convid = @convid AND Message.timestampt < @lastmessage ORDER BY Message.timestampt LIMIT 25", Database.connection);
                 selectCommand.Parameters.AddWithValue("@convid", convid);
                 selectCommand.Parameters.AddWithValue("@lastmessage", lastMessageTime);
                 using var reader = await selectCommand.ExecuteReaderAsync();
@@ -933,7 +943,8 @@ namespace DatabaseGroup
                         reader.GetString(0), // Assuming the first column is convid
                         reader.GetString(1),  // Assuming the second column is convname
                         reader.GetString(2),
-                        reader.GetString(3)
+                        reader.GetString(3),
+                        reader.IsDBNull(4) ? "null" : reader.GetString(4)
                     };
                     Messages.Add(message);
                 }
@@ -975,6 +986,43 @@ namespace DatabaseGroup
             {
                 // Handle any exceptions and roll back the transaction
                 Console.WriteLine("An error occurred: " + ex.Message);
+            }
+            finally
+            {
+                if (Database.connection.State != ConnectionState.Closed)
+                {
+                    Database.connection.Close();
+                }
+            }
+        }
+
+        public static async Task<List<string>> GetFileDetails(string fileid)
+        {
+            // return the name (not username) of the sender, content and sent time
+            Database.connection = await DbConnection.GetDbConnection();
+            try
+            {
+                List<string> File = new List<string>();
+                using var selectCommand = new MySqlCommand("SELECT fileid, filename, filepath, filesize, filetype FROM File WHERE fileid=@fileid", Database.connection);
+                selectCommand.Parameters.AddWithValue("@fileid", fileid);
+                using var reader = await selectCommand.ExecuteReaderAsync();
+
+
+                while (await reader.ReadAsync())
+                {
+                    for (int i = 0; i < reader.FieldCount; i++)
+                    {
+                        File.Add(reader.GetString(i));
+                    }
+                }
+
+                Console.WriteLine(string.Join(", ", File));
+                return File;
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"An error occurred: {ex.Message}");
+                throw;
             }
             finally
             {

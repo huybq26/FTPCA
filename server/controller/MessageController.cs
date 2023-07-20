@@ -16,7 +16,7 @@ namespace MessageControllerGroup
         [HttpPost]
         [Authorize]
         [Route("createconv")]
-        public async Task<IActionResult> CreateConversation(string convname, string participantList)
+        public async Task<IActionResult> CreateConversation(string convname, string participantList, string creator)
         {
             // participantLists is the list of userid separated by comma
             List<int> userIdList = participantList.Split(',')
@@ -25,7 +25,7 @@ namespace MessageControllerGroup
             try
             {
                 Console.WriteLine(convname + " to " + participantList);
-                string convid = await Database.CreateConversation(convname, userIdList);
+                string convid = await Database.CreateConversation(convname, userIdList, creator);
                 return Ok(new
                 {
                     Message = "Friend request sent successfully",
@@ -153,13 +153,13 @@ namespace MessageControllerGroup
         [HttpPost]
         [Authorize]
         [Route("sendmessage")]
-        public async Task<IActionResult> SendMessage(int senderid, string convid, string content, string fileId)
+        public async Task<IActionResult> SendMessage(int senderid, string convid, string content, string fileid)
         {
             // participantLists is the list of userid separated by comma
             try
             {
-                Console.WriteLine(senderid.ToString() + " " + convid + " to " + content + " file " + fileId);
-                await Database.SendMessage(senderid, convid, content, fileId);
+                Console.WriteLine(senderid.ToString() + " " + convid + " to " + content + " file " + fileid);
+                await Database.SendMessage(senderid, convid, content, fileid);
                 // await ChatHub.SendMessageHub(senderid.ToString(), content);
                 return Ok(new
                 {
@@ -167,12 +167,11 @@ namespace MessageControllerGroup
                     Data = content
                 });
             }
-            catch (System.Exception)
+            catch (Exception e)
             {
                 return BadRequest(new
                 {
-                    Message = "Send message unsuccessfully",
-                    Data = content
+                    Message = "Send message unsuccessfully " + e.Message,
 
                 });
             }
@@ -220,7 +219,7 @@ namespace MessageControllerGroup
                 int fileSizeInBytes = (int)file.Length;
                 string fileType = file.ContentType;
 
-                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "Uploads", uniqueFileName);
+                var filePath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/Uploads", uniqueFileName);
 
                 using (var stream = new FileStream(filePath, FileMode.Create))
                 {
@@ -232,7 +231,14 @@ namespace MessageControllerGroup
                 return Ok(new
                 {
                     Message = "Upload file successfully!",
-                    Data = (string)filePath
+                    Data = new
+                    {
+                        filePath = (string)filePath,
+                        fileId = fileId,
+                        fileName = file.FileName,
+                        fileType = fileType,
+                        fileSize = fileSizeInBytes
+                    }
                 });
             }
             catch (Exception ex)
@@ -242,8 +248,30 @@ namespace MessageControllerGroup
                     Message = "Failed to upload file: " + ex.Message,
                 });
             }
+        }
 
-
+        [HttpGet]
+        [Authorize]
+        [Route("getfile")]
+        public async Task<IActionResult> GetFileDetails(string fileid)
+        {
+            Console.WriteLine(fileid);
+            try
+            {
+                List<string> File = await Database.GetFileDetails(fileid);
+                return Ok(new
+                {
+                    Message = "File retrieved successfully",
+                    Data = File
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    Message = "Failed to retrieve File: " + ex.Message,
+                });
+            }
         }
 
 

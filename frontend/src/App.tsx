@@ -4,6 +4,7 @@ import {
 	Route,
 	Routes,
 	useLocation,
+	Navigate,
 } from 'react-router-dom';
 import Auth from './app/authentication/Auth';
 import LandingPage from './app/landing/Landing';
@@ -46,6 +47,7 @@ function App() {
 				{loggedIn && <VerticalNav onLogout={handleLogout} />}
 				<div style={{ flex: 1 }}>
 					<Routes>
+						<Route path='/' element={<Navigate to='/message' />} />
 						<Route path='/login' element={<Auth onLogin={handleLogin} />} />
 						<Route path='/landing' element={<LandingPage />} />
 						<Route path='/friendlist' element={<FriendsListing />} />
