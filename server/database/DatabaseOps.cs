@@ -931,7 +931,7 @@ namespace DatabaseGroup
             try
             {
                 List<List<string>> Messages = new List<List<string>>();
-                using var selectCommand = new MySqlCommand("SELECT Message.messageid, User.name, Message.content, Message.timestampt, Message.fileid FROM Message LEFT JOIN User ON Message.senderid = User.userid WHERE Message.convid = @convid AND Message.timestampt < @lastmessage ORDER BY Message.timestampt LIMIT 25", Database.connection);
+                using var selectCommand = new MySqlCommand("SELECT * FROM (SELECT Message.messageid, User.name, Message.content, Message.timestampt, Message.fileid, Message.senderid, User.username FROM Message LEFT JOIN User ON Message.senderid = User.userid  WHERE Message.convid = @convid AND Message.timestampt < @lastmessage ORDER BY Message.timestampt DESC LIMIT 25) AS MostRecentMessages ORDER BY MostRecentMessages.timestampt ASC; ", Database.connection);
                 selectCommand.Parameters.AddWithValue("@convid", convid);
                 selectCommand.Parameters.AddWithValue("@lastmessage", lastMessageTime);
                 using var reader = await selectCommand.ExecuteReaderAsync();
@@ -944,7 +944,9 @@ namespace DatabaseGroup
                         reader.GetString(1),  // Assuming the second column is convname
                         reader.GetString(2),
                         reader.GetString(3),
-                        reader.IsDBNull(4) ? "null" : reader.GetString(4)
+                        reader.IsDBNull(4) ? "null" : reader.GetString(4),
+                        reader.GetInt32(5).ToString(),
+                        reader.GetString(6)
                     };
                     Messages.Add(message);
                 }

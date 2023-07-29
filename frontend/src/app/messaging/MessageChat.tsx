@@ -38,6 +38,8 @@ interface Message {
 	filename: string | null;
 	filepath: string | null;
 	filetype: string | null;
+	senderid: string | null;
+	senderusername: string | null;
 }
 
 const MessageChat: React.FC = () => {
@@ -161,15 +163,40 @@ const MessageChat: React.FC = () => {
 		}
 	};
 
+	// const getCurrentDateTime = (): string => {
+	// 	const currentDate = new Date();
+	// 	const gmtPlus8Offset = 8 * 60; // GMT+8 offset in minutes
+	// 	const gmtPlus8DateTime = new Date(
+	// 		currentDate.getTime() + gmtPlus8Offset * 60000
+	// 	); // Add offset in milliseconds
+	// 	const formattedDateTime = gmtPlus8DateTime.toISOString().slice(0, 19);
+
+	// 	return formattedDateTime;
+	// };
 	const getCurrentDateTime = (): string => {
 		const currentDate = new Date();
 		const gmtPlus8Offset = 8 * 60; // GMT+8 offset in minutes
 		const gmtPlus8DateTime = new Date(
 			currentDate.getTime() + gmtPlus8Offset * 60000
 		); // Add offset in milliseconds
-		const formattedDateTime = gmtPlus8DateTime.toISOString().slice(0, 19);
+
+		// Get the individual components of the date and time
+		const year = gmtPlus8DateTime.getFullYear();
+		const month = gmtPlus8DateTime.getMonth() + 1; // Months are 0-based, so add 1
+		const day = gmtPlus8DateTime.getDate();
+		const hours = gmtPlus8DateTime.getHours();
+		const minutes = gmtPlus8DateTime.getMinutes();
+		const seconds = gmtPlus8DateTime.getSeconds();
+		const ampm = hours >= 12 ? 'PM' : 'AM';
+		const formattedDateTime = `${month}/${day}/${year} ${formatTwoDigits(
+			hours
+		)}:${formatTwoDigits(minutes)}:${formatTwoDigits(seconds)} ${ampm}`;
 
 		return formattedDateTime;
+	};
+
+	const formatTwoDigits = (num: number): string => {
+		return num.toString().padStart(2, '0');
 	};
 
 	const handleConversationClick = async (conversation: Conversation) => {
@@ -220,6 +247,8 @@ const MessageChat: React.FC = () => {
 										content: item[2],
 										timestamp: item[3],
 										fileid: item[4],
+										senderid: item[5],
+										senderusername: item[6],
 										filename: fileData.data[1],
 										filepath: fileData.data[2],
 										filetype: fileData.data[4],
@@ -238,6 +267,8 @@ const MessageChat: React.FC = () => {
 							content: item[2],
 							timestamp: item[3],
 							fileid: item[4],
+							senderid: item[5],
+							senderusername: item[6],
 						};
 					})
 				);
@@ -304,9 +335,11 @@ const MessageChat: React.FC = () => {
 							if (response.status === 200) {
 								const newMessageObject: Message = {
 									id: response.data.messageid,
-									sender: userInfo?.username || '',
+									sender: userInfo?.name || '',
 									content: fileName,
 									timestamp: getCurrentDateTime(),
+									senderid: userInfo?.userid || '',
+									senderusername: userInfo?.username || '',
 									fileid: fileId,
 									filename: fileName,
 									filepath: filePath,
@@ -363,9 +396,11 @@ const MessageChat: React.FC = () => {
 				if (response.status === 200) {
 					const newMessageObject: Message = {
 						id: response.data.messageid,
-						sender: userInfo?.username || '',
+						sender: userInfo?.name || '',
 						content: newMessage,
 						timestamp: getCurrentDateTime(),
+						senderid: userInfo?.userid || '',
+						senderusername: userInfo?.username || '',
 						fileid: 'null',
 						filename: 'null',
 						filepath: 'null',
@@ -631,7 +666,11 @@ const MessageChat: React.FC = () => {
 									className='last-message'
 									style={{ fontWeight: 300, fontSize: 14, color: 'gray' }}
 								>
-									{conversation.lastSender}: {conversation.lastMessage}
+									{`${conversation.lastSender}: ${
+										conversation.lastMessage.length > 30
+											? conversation.lastMessage.slice(0, 30) + '...'
+											: conversation.lastMessage
+									}`}
 								</div>
 							</div>
 						</div>
@@ -678,62 +717,160 @@ const MessageChat: React.FC = () => {
 									</IconButton>
 								</Toolbar>
 							</AppBar>
-							{messages.map((message) => (
-								<div
-									key={message.id}
-									className='message'
-									style={{
-										backgroundColor: '#ECE5DD',
-										marginBottom: '10px',
-										padding: '10px',
-										borderRadius: '5px',
-									}}
-								>
-									<div
-										className='message-sender'
-										style={{ fontWeight: 'bold' }}
-									>
-										{message.sender}
-									</div>
-									<div className='message-content'>
-										{message.fileid !== 'null' ? (
-											// Check if the file type is an image (you can customize this check based on actual image MIME types)
-											message.filetype?.startsWith('image/') ? (
-												<img
-													src={`http://localhost:5169/Uploads/${
-														message.filename
-															? message.fileid + '_' + message.filename
-															: ''
-													}`}
-													alt={message.filename ?? ''}
-													style={{ maxHeight: '300px', maxWidth: '100%' }} // Set appropriate height
-												/>
-											) : (
-												<a
-													href={`http://localhost:5169/Uploads/${
-														message.filename
-															? message.fileid + '_' + message.filename
-															: ''
-													}`}
-													download
-													target='_blank'
-													rel='noopener noreferrer'
+							<div style={{ display: 'flex', flexDirection: 'column' }}>
+								{messages.map((message, index) => {
+									const currentDate = new Date(
+										message.timestamp
+									).toLocaleDateString();
+
+									// Get the date of the previous message (if it exists)
+									const prevMessage =
+										index > 0
+											? new Date(
+													messages[index - 1].timestamp
+											  ).toLocaleDateString()
+											: null;
+
+									// Check if the date of the current message is different from the previous message
+									const showDateHeader = prevMessage !== currentDate;
+									return (
+										<div
+											key={message.id}
+											className='message-container'
+											style={{
+												position: 'relative',
+												marginBottom: '10px',
+												maxWidth: '60%',
+												alignSelf:
+													userInfo?.userid === message.senderid
+														? 'flex-end'
+														: 'flex-start',
+												display: 'flex',
+												flexDirection: 'column',
+											}}
+										>
+											{showDateHeader && (
+												<div
+													style={{
+														fontSize: '0.8rem',
+														color: '#616161',
+														textAlign: 'center',
+														backgroundColor: '#ECE5DD',
+														padding: '5px',
+														borderRadius: '5px',
+														width: 'fit-content', // Make the date header width fit its content
+														margin: '0 auto', // Center the date header horizontally
+													}}
 												>
-													{message.filename}
-												</a>
-											)
-										) : (
-											message.content
-										)}
-									</div>
-									<div
-										className='message-timestamp'
-										style={{ fontSize: '0.8rem', color: 'gray' }}
-									>
-										{message.timestamp}
-									</div>
-								</div>
-							))}
+													{/* Render the date here */}
+													{currentDate}
+												</div>
+											)}
+											{/* Show the profile picture on the left side for messages from others */}
+											{userInfo?.userid != message.senderid && (
+												<img
+													src='./default-ava.png'
+													height='40px'
+													alt='ava'
+													style={{
+														position: 'absolute',
+														// left: '-80px', // Adjust this value as needed
+														top: 0,
+														borderRadius: '50%', // Round shape
+													}}
+												/>
+											)}
+
+											<div
+												className='message'
+												style={{
+													backgroundColor:
+														userInfo?.userid === message.senderid
+															? '#D7E6FF'
+															: '#ECE5DD',
+													padding: '10px',
+													borderRadius: '5px',
+													marginLeft:
+														userInfo?.userid !== message.senderid
+															? '50px'
+															: '0',
+													marginRight:
+														userInfo?.userid == message.senderid ? '20px' : '0',
+													minWidth: `${Math.min(
+														150,
+														message.content.length * 10
+													)}px`,
+												}}
+											>
+												<div className='message-sender'>
+													{userInfo?.userid !== message.senderid && (
+														<>
+															<span style={{ fontWeight: 'bold' }}>
+																{message.sender}
+															</span>
+															<span
+																style={{
+																	fontSize: '0.7rem',
+																	marginLeft: '5px',
+																	color: '#616161',
+																}}
+															>
+																{'@' + message.senderusername}
+															</span>
+														</>
+													)}
+												</div>
+												<div className='message-content'>
+													{message.fileid !== 'null' ? (
+														// Check if the file type is an image (you can customize this check based on actual image MIME types)
+														message.filetype?.startsWith('image/') ? (
+															<img
+																src={`http://localhost:5169/Uploads/${
+																	message.filename
+																		? message.fileid + '_' + message.filename
+																		: ''
+																}`}
+																alt={message.filename ?? ''}
+																style={{ maxHeight: '300px', maxWidth: '100%' }} // Set appropriate height
+															/>
+														) : (
+															<a
+																href={`http://localhost:5169/Uploads/${
+																	message.filename
+																		? message.fileid + '_' + message.filename
+																		: ''
+																}`}
+																download
+																target='_blank'
+																rel='noopener noreferrer'
+															>
+																{message.filename}
+															</a>
+														)
+													) : (
+														message.content
+													)}
+												</div>
+												<div
+													className='message-timestamp'
+													style={{
+														fontSize: '0.7rem',
+														// color: 'gray',
+														textAlign: 'right',
+														color: '#616161',
+														marginBottom: '-5px',
+													}}
+												>
+													{message.timestamp.split(' ')[1] +
+														' ' +
+														message.timestamp.split(' ')[2]}
+													{/* {message.timestamp} */}
+												</div>
+											</div>
+										</div>
+									);
+								})}
+							</div>
 
 							<div
 								className='message-input-container'
