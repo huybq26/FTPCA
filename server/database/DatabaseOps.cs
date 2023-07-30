@@ -650,7 +650,7 @@ namespace DatabaseGroup
             }
         }
 
-        public static async Task<string> CreateConversation(string convname, List<int> participants, string creator)
+        public static async Task<string> CreateConversation(string convname, List<int> participants, string creatorname, string creatorid)
         {
             Database.connection = await DbConnection.GetDbConnection();
             try
@@ -663,9 +663,9 @@ namespace DatabaseGroup
                 insertCommand.Parameters.AddWithValue("@convname", convname);
                 insertCommand.Parameters.AddWithValue("@creationtime", DateTime.Now);
                 insertCommand.Parameters.AddWithValue("@lastmessage", DateTime.Now);
-                insertCommand.Parameters.AddWithValue("@lastsender", creator);
-                insertCommand.Parameters.AddWithValue("@lastmessage", "Created group " + convname);
-                insertCommand.Parameters.AddWithValue("@creator", creator);
+                insertCommand.Parameters.AddWithValue("@lastsender", creatorname);
+                insertCommand.Parameters.AddWithValue("@lastmessagecontent", "Created group " + convname);
+                insertCommand.Parameters.AddWithValue("@creator", Int32.Parse(creatorid));
 
                 await insertCommand.ExecuteNonQueryAsync();
 

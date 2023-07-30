@@ -16,7 +16,7 @@ namespace MessageControllerGroup
         [HttpPost]
         [Authorize]
         [Route("createconv")]
-        public async Task<IActionResult> CreateConversation(string convname, string participantList, string creator)
+        public async Task<IActionResult> CreateConversation(string convname, string participantList, string creatorname, string creatorid)
         {
             // participantLists is the list of userid separated by comma
             List<int> userIdList = participantList.Split(',')
@@ -25,7 +25,7 @@ namespace MessageControllerGroup
             try
             {
                 Console.WriteLine(convname + " to " + participantList);
-                string convid = await Database.CreateConversation(convname, userIdList, creator);
+                string convid = await Database.CreateConversation(convname, userIdList, creatorname, creatorid);
                 return Ok(new
                 {
                     Message = "Friend request sent successfully",

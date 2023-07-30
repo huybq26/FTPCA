@@ -1,14 +1,17 @@
 import React, { useState, useEffect, useRef, ChangeEvent } from 'react';
 import { UserInfo, fetchToken } from '../authentication/JwtUtils';
+
 import axios from 'axios';
 import { useNavigate } from 'react-router-dom';
 import {
 	AppBar,
 	Box,
+	Button,
 	IconButton,
 	InputBase,
 	Modal,
 	Paper,
+	TextField,
 	Toolbar,
 	Typography,
 } from '@mui/material';
@@ -17,6 +20,9 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddCircleOutlineIcon from '@mui/icons-material/AddCircleOutline';
 import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
+import AddIcon from '@mui/icons-material/Add';
+import Mood from '@mui/icons-material/Mood';
+import SendIcon from '@mui/icons-material/Send';
 import './style.css';
 import * as signalR from '@microsoft/signalr';
 
@@ -62,6 +68,7 @@ const MessageChat: React.FC = () => {
 		null
 	);
 	const [file, setFile] = useState<File | null>(null);
+	const fileInputRef = useRef<HTMLInputElement | null>(null);
 
 	// useEffect(() => {
 	// 	const newConnection = new signalR.HubConnectionBuilder()
@@ -199,6 +206,8 @@ const MessageChat: React.FC = () => {
 		return num.toString().padStart(2, '0');
 	};
 
+	const handleMoodClick = () => {};
+
 	const handleConversationClick = async (conversation: Conversation) => {
 		setSelectedConversation(conversation);
 
@@ -288,10 +297,88 @@ const MessageChat: React.FC = () => {
 		setNewMessage(event.target.value);
 	};
 
-	const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+	const handleFileChange = async (e: ChangeEvent<HTMLInputElement>) => {
 		const selectedFile = e.target.files?.[0];
 		if (selectedFile) {
 			setFile(selectedFile);
+		}
+		if (selectedFile) {
+			try {
+				const formData = new FormData();
+				formData.append('file', selectedFile);
+
+				const response = await axios.post(
+					'http://localhost:5169/upload',
+					formData,
+					{
+						headers: { 'Content-Type': 'multipart/form-data' },
+					}
+				);
+
+				if (response.status === 200) {
+					console.log(response.data.data);
+					let fileId = response.data.data.fileId; // Handle the response from the backend if needed
+					let fileName = response.data.data.fileName;
+					let filePath = response.data.data.filePath;
+					let fileType = response.data.data.fileType;
+
+					// send message with file (without content)
+					if (selectedConversation) {
+						console.log('Sending message with file');
+						try {
+							const response = await axios.post(
+								`http://localhost:5169/sendmessage?senderid=${userInfo?.userid}&convid=${selectedConversation.id}&fileid=${fileId}&content=Sent a file`,
+								{},
+								{
+									headers: {
+										Authorization: `Bearer ${sessionStorage.getItem(
+											'jwtToken'
+										)}`,
+									},
+								}
+							);
+
+							if (response.status === 200) {
+								const newMessageObject: Message = {
+									id: response.data.messageid,
+									sender: userInfo?.name || '',
+									content: fileName,
+									timestamp: getCurrentDateTime(),
+									senderid: userInfo?.userid || '',
+									senderusername: userInfo?.username || '',
+									fileid: fileId,
+									filename: fileName,
+									filepath: filePath,
+									filetype: fileType,
+								};
+								// SignalR part
+								// if (connection) {
+								// 	connection
+								// 		.invoke('SendMessage', userInfo?.username, fileName)
+								// 		.catch((error) =>
+								// 			console.error('SignalR sendMessage error:', error)
+								// 		);
+								// }
+
+								setMessages([...messages, newMessageObject]);
+								setNewMessage('');
+								let updateConversation = selectedConversation;
+								updateConversation.lastMessage = 'Sent a file';
+								updateConversation.lastSender = userInfo?.name ?? '';
+								setSelectedConversation(updateConversation);
+							} else {
+								console.log('Error:', response.status);
+							}
+						} catch (error) {
+							console.log('An error occurred:', error);
+						}
+					}
+				}
+			} catch (error) {
+				console.error(error);
+			}
+		} else {
+			console.log('Please select a file first.');
 		}
 	};
 
@@ -506,9 +593,9 @@ const MessageChat: React.FC = () => {
 		if (newChatName.trim() !== '' && selectedUsers.length > 0) {
 			try {
 				const response = await fetch(
-					`http://localhost:5169/createconv?convname=${newChatName}&creator=${
+					`http://localhost:5169/createconv?convname=${newChatName}&creatorname=${
 						userInfo?.name
-					}&participantList=${selectedUsers
+					}&creatorid=${userInfo?.userid}&participantList=${selectedUsers
 						.map((user) => user.userid)
 						.toString()}`,
 					{
@@ -524,7 +611,7 @@ const MessageChat: React.FC = () => {
 					const newConversation: Conversation = {
 						id: data.convid,
 						name: newChatName,
-						creator: userInfo?.name ?? '',
+						creator: userInfo?.userid ?? '',
 						lastMessage: 'Created group ' + newChatName,
 						groupImage: '',
 						lastSender: userInfo?.name ?? '',
@@ -588,7 +675,11 @@ const MessageChat: React.FC = () => {
 					</div>
 
 					<div
-						style={{ display: 'flex', justifyContent: 'center', width: '100%' }}
+						style={{
+							display: 'flex',
+							justifyContent: 'center',
+							width: '100%',
+						}}
 					>
 						<Paper
 							component='form'
@@ -623,58 +714,79 @@ const MessageChat: React.FC = () => {
 							/>
 						</Paper>
 					</div>
-
-					{conversations.map((conversation) => (
-						<div
-							key={conversation.id}
-							className={`conversation ${
-								selectedConversation === conversation ? 'active' : ''
-							}`}
-							onClick={() => handleConversationClick(conversation)}
-							style={{
-								display: 'flex',
-								flexDirection: 'row',
-								alignItems: 'center',
-								marginLeft: '5px',
-								cursor: 'pointer',
-								borderRadius: '5px',
-								height: '55px',
-								// backgroundColor:
-								// 	selectedConversation === conversation ? '#f0f0f0' : 'initial',
-							}}
-						>
-							<div className='group-image' style={{ marginLeft: '5px' }}>
-								<img
-									// src={conversation.groupImage}
-									src='./chat.jpg'
-									height='30px'
-									alt='Group Image'
-								/>
-							</div>
-							<div
-								className='conversation-details'
-								style={{ marginLeft: '3px' }}
-							>
+					<div
+						style={{
+							maxWidth: '100%',
+							flex: 1,
+							overflowY: 'auto',
+							height: 'calc(100vh - 50px)',
+						}}
+					>
+						{conversations.map((conversation) => (
+							<>
 								<div
-									className='conversation-name'
-									style={{ fontSize: 18, fontWeight: 500 }}
-								>
-									{conversation.name}
-								</div>
-								{/* <div className='last-message'>{conversation.lastMessage}</div> */}
-								<div
-									className='last-message'
-									style={{ fontWeight: 300, fontSize: 14, color: 'gray' }}
-								>
-									{`${conversation.lastSender}: ${
-										conversation.lastMessage.length > 30
-											? conversation.lastMessage.slice(0, 30) + '...'
-											: conversation.lastMessage
+									key={conversation.id}
+									className={`conversation ${
+										selectedConversation === conversation ? 'active' : ''
 									}`}
+									onClick={() => handleConversationClick(conversation)}
+									style={{
+										display: 'flex',
+										flexDirection: 'row',
+										alignItems: 'center',
+										marginLeft: '5px',
+										cursor: 'pointer',
+										borderRadius: '5px',
+										height: '55px',
+										// borderBottom: '1px solid black',
+										// backgroundColor:
+										// 	selectedConversation === conversation ? '#f0f0f0' : 'initial',
+									}}
+								>
+									<div className='group-image' style={{ marginLeft: '5px' }}>
+										<img
+											// src={conversation.groupImage}
+											src='./chat.jpg'
+											height='30px'
+											alt='Group Image'
+										/>
+									</div>
+									<div
+										className='conversation-details'
+										style={{ marginLeft: '3px' }}
+									>
+										<div
+											className='conversation-name'
+											style={{ fontSize: 18, fontWeight: 500 }}
+										>
+											{conversation.name}
+										</div>
+										{/* <div className='last-message'>{conversation.lastMessage}</div> */}
+										<div
+											className='last-message'
+											style={{ fontWeight: 300, fontSize: 14, color: 'gray' }}
+										>
+											{`${conversation.lastSender}: ${
+												conversation.lastMessage.length > 30
+													? conversation.lastMessage.slice(0, 30) + '...'
+													: conversation.lastMessage
+											}`}
+										</div>
+									</div>
 								</div>
-							</div>
-						</div>
-					))}
+								<hr
+									style={{
+										width: '200px',
+										marginBottom: '-3px',
+										marginTop: '0px',
+										borderColor: '#ebeae8',
+										color: '#ebeae8',
+										height: '0.01px',
+									}}
+								/>
+							</>
+						))}
+					</div>
 				</div>
 				<div
 					className='messages'
@@ -683,13 +795,17 @@ const MessageChat: React.FC = () => {
 						maxWidth: '100%',
 						flex: 1,
 						overflowY: 'auto',
-						maxHeight: 'calc(100vh - 20px)',
+						height: 'calc(100vh - 50px)',
+						backgroundImage:
+							'url("https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg")',
+						// backgroundSize: 'cover',
+						// opacity: 0.7,
 					}}
 					ref={messagesContainerRef}
 				>
 					{selectedConversation ? (
 						<div className='conversation-messages'>
-							<AppBar position='sticky'>
+							<AppBar position='sticky' style={{ background: '#34568B' }}>
 								<Toolbar>
 									{selectedConversation && (
 										<>
@@ -717,191 +833,261 @@ const MessageChat: React.FC = () => {
 									</IconButton>
 								</Toolbar>
 							</AppBar>
-							<div style={{ display: 'flex', flexDirection: 'column' }}>
-								{messages.map((message, index) => {
-									const currentDate = new Date(
-										message.timestamp
-									).toLocaleDateString();
+							<div
+								style={{
+									backgroundColor: 'rgba(217, 217, 217,0.5)',
+									height: '100%',
+								}}
+							>
+								<div
+									style={{
+										display: 'flex',
+										flexDirection: 'column',
+									}}
+								>
+									{messages.map((message, index) => {
+										const currentDate = new Date(
+											message.timestamp
+										).toLocaleDateString();
 
-									// Get the date of the previous message (if it exists)
-									const prevMessage =
-										index > 0
-											? new Date(
-													messages[index - 1].timestamp
-											  ).toLocaleDateString()
-											: null;
+										// Get the date of the previous message (if it exists)
+										const prevMessage =
+											index > 0
+												? new Date(
+														messages[index - 1].timestamp
+												  ).toLocaleDateString()
+												: null;
 
-									// Check if the date of the current message is different from the previous message
-									const showDateHeader = prevMessage !== currentDate;
-									return (
-										<div
-											key={message.id}
-											className='message-container'
-											style={{
-												position: 'relative',
-												marginBottom: '10px',
-												maxWidth: '60%',
-												alignSelf:
-													userInfo?.userid === message.senderid
-														? 'flex-end'
-														: 'flex-start',
-												display: 'flex',
-												flexDirection: 'column',
-											}}
-										>
-											{showDateHeader && (
-												<div
-													style={{
-														fontSize: '0.8rem',
-														color: '#616161',
-														textAlign: 'center',
-														backgroundColor: '#ECE5DD',
-														padding: '5px',
-														borderRadius: '5px',
-														width: 'fit-content', // Make the date header width fit its content
-														margin: '0 auto', // Center the date header horizontally
-													}}
-												>
-													{/* Render the date here */}
-													{currentDate}
-												</div>
-											)}
-											{/* Show the profile picture on the left side for messages from others */}
-											{userInfo?.userid != message.senderid && (
-												<img
-													src='./default-ava.png'
-													height='40px'
-													alt='ava'
-													style={{
-														position: 'absolute',
-														// left: '-80px', // Adjust this value as needed
-														top: 0,
-														borderRadius: '50%', // Round shape
-													}}
-												/>
-											)}
-
+										// Check if the date of the current message is different from the previous message
+										const showDateHeader = prevMessage !== currentDate;
+										return (
 											<div
-												className='message'
+												key={message.id}
+												className='message-container'
 												style={{
-													backgroundColor:
+													position: 'relative',
+													marginBottom:
+														index == messages.length - 1 ? '35px' : '10px',
+													marginTop: index == 0 ? '10px' : '0px',
+													maxWidth: '60%',
+													alignSelf:
 														userInfo?.userid === message.senderid
-															? '#D7E6FF'
-															: '#ECE5DD',
-													padding: '10px',
-													borderRadius: '5px',
-													marginLeft:
-														userInfo?.userid !== message.senderid
-															? '50px'
-															: '0',
-													marginRight:
-														userInfo?.userid == message.senderid ? '20px' : '0',
-													minWidth: `${Math.min(
-														150,
-														message.content.length * 10
-													)}px`,
+															? 'flex-end'
+															: 'flex-start',
+													display: 'flex',
+													flexDirection: 'column',
+													marginLeft: '40px',
 												}}
 											>
-												<div className='message-sender'>
-													{userInfo?.userid !== message.senderid && (
-														<>
-															<span style={{ fontWeight: 'bold' }}>
-																{message.sender}
-															</span>
-															<span
-																style={{
-																	fontSize: '0.7rem',
-																	marginLeft: '5px',
-																	color: '#616161',
-																}}
-															>
-																{'@' + message.senderusername}
-															</span>
-														</>
-													)}
-												</div>
-												<div className='message-content'>
-													{message.fileid !== 'null' ? (
-														// Check if the file type is an image (you can customize this check based on actual image MIME types)
-														message.filetype?.startsWith('image/') ? (
-															<img
-																src={`http://localhost:5169/Uploads/${
-																	message.filename
-																		? message.fileid + '_' + message.filename
-																		: ''
-																}`}
-																alt={message.filename ?? ''}
-																style={{ maxHeight: '300px', maxWidth: '100%' }} // Set appropriate height
-															/>
-														) : (
-															<a
-																href={`http://localhost:5169/Uploads/${
-																	message.filename
-																		? message.fileid + '_' + message.filename
-																		: ''
-																}`}
-																download
-																target='_blank'
-																rel='noopener noreferrer'
-															>
-																{message.filename}
-															</a>
-														)
-													) : (
-														message.content
-													)}
-												</div>
+												{
+													// showDateHeader && (
+													// <div
+													// 	style={{
+													// 		fontSize: '0.8rem',
+													// 		color: '#616161',
+													// 		textAlign: 'center',
+													// 		backgroundColor: '#ECE5DD',
+													// 		padding: '5px',
+													// 		borderRadius: '5px',
+													// 		width: 'fit-content', // Make the date header width fit its content
+													// 		margin: '0 auto', // Center the date header horizontally
+													// 	}}
+													// >
+													// 	{/* Render the date here */}
+													// 	{currentDate}
+													// </div>
+													// )
+												}
+												{userInfo?.userid != message.senderid && (
+													<img
+														src='./default-ava.png'
+														height='40px'
+														alt='ava'
+														style={{
+															position: 'absolute',
+															// left: '-80px', // Adjust this value as needed
+															top: 0,
+															borderRadius: '50%', // Round shape
+														}}
+													/>
+												)}
+
 												<div
-													className='message-timestamp'
+													className='message'
 													style={{
-														fontSize: '0.7rem',
-														// color: 'gray',
-														textAlign: 'right',
-														color: '#616161',
-														marginBottom: '-5px',
+														backgroundColor:
+															userInfo?.userid === message.senderid
+																? '#D7E6FF'
+																: 'white',
+														padding: '10px',
+														borderRadius: '5px',
+														marginLeft:
+															userInfo?.userid !== message.senderid
+																? '50px'
+																: '0',
+														marginRight:
+															userInfo?.userid == message.senderid
+																? '20px'
+																: '0',
+														minWidth: `${Math.min(
+															150,
+															message.content.length * 10
+														)}px`,
 													}}
 												>
-													{message.timestamp.split(' ')[1] +
-														' ' +
-														message.timestamp.split(' ')[2]}
-													{/* {message.timestamp} */}
+													<div className='message-sender'>
+														{userInfo?.userid !== message.senderid && (
+															<>
+																<span style={{ fontWeight: 'bold' }}>
+																	{message.sender}
+																</span>
+																<span
+																	style={{
+																		fontSize: '0.7rem',
+																		marginLeft: '5px',
+																		color: '#616161',
+																	}}
+																>
+																	{'@' + message.senderusername}
+																</span>
+															</>
+														)}
+													</div>
+													<div className='message-content'>
+														{message.fileid !== 'null' ? (
+															// Check if the file type is an image (you can customize this check based on actual image MIME types)
+															message.filetype?.startsWith('image/') ? (
+																<img
+																	src={`http://localhost:5169/Uploads/${
+																		message.filename
+																			? message.fileid + '_' + message.filename
+																			: ''
+																	}`}
+																	alt={message.filename ?? ''}
+																	style={{
+																		maxHeight: '300px',
+																		maxWidth: '100%',
+																	}} // Set appropriate height
+																/>
+															) : (
+																<a
+																	href={`http://localhost:5169/Uploads/${
+																		message.filename
+																			? message.fileid + '_' + message.filename
+																			: ''
+																	}`}
+																	download
+																	target='_blank'
+																	rel='noopener noreferrer'
+																>
+																	{message.filename}
+																</a>
+															)
+														) : (
+															message.content
+														)}
+													</div>
+													<div
+														className='message-timestamp'
+														style={{
+															fontSize: '0.7rem',
+															// color: 'gray',
+															textAlign: 'right',
+															color: '#616161',
+															marginBottom: '-5px',
+														}}
+													>
+														{message.timestamp.split(' ')[1] +
+															' ' +
+															message.timestamp.split(' ')[2]}
+														{/* {message.timestamp} */}
+													</div>
 												</div>
 											</div>
-										</div>
-									);
-								})}
+										);
+									})}
+								</div>
 							</div>
 
 							<div
 								className='message-input-container'
 								style={{
-									marginTop: '20px',
+									marginTop: '50px',
 									position: 'fixed',
 									// left: 0,
 									bottom: 0,
-									width: '100%',
-									backgroundColor: '#ffffff',
-									padding: '10px',
+
+									width: '75%',
+									backgroundColor: '#f5f5f5',
+									// padding: '10px',
 									display: 'flex',
 									flexDirection: 'row',
+									alignItems: 'center',
+									height: '60px',
+									borderRadius: '15px',
 								}}
 							>
-								<div>
+								{/* <div>
 									<input type='file' onChange={handleFileChange} />
 									<button onClick={handleUpload}>Upload File</button>
+								</div> */}
+
+								<div style={{ marginLeft: '10px' }}>
+									<input
+										ref={fileInputRef}
+										id='file-input'
+										type='file'
+										style={{ display: 'none' }}
+										onChange={handleFileChange}
+									/>
+									<label htmlFor='file-input'>
+										<IconButton component='span'>
+											<AddIcon fontSize='large' />
+										</IconButton>
+									</label>
 								</div>
-								<input
+								<div>
+									<IconButton onClick={handleMoodClick}>
+										<Mood fontSize='medium' />
+									</IconButton>
+								</div>
+								{/* <input
 									type='text'
 									className='message-input'
 									placeholder='Type your message...'
 									value={newMessage}
 									onChange={(e) => setNewMessage(e.target.value)}
 								/>
-								<button onClick={handleSendMessage}>Send</button>
+								<button onClick={handleSendMessage}>Send</button> */}
+								<div>
+									<TextField
+										type='text'
+										variant='outlined'
+										size='small'
+										placeholder='Type your message...'
+										value={newMessage}
+										onChange={(e) => setNewMessage(e.target.value)}
+										style={{
+											flex: 1,
+											width: '750px',
+											marginRight: '10px',
+											marginLeft: '20px',
+											borderRadius: '20px',
+											verticalAlign: '10px',
+										}}
+									/>
+								</div>
+								<Button
+									variant='contained'
+									color='primary'
+									onClick={handleSendMessage}
+								>
+									<SendIcon />
+								</Button>
 							</div>
 						</div>
 					) : (
-						<h2>Select a Conversation</h2>
+						<h2 style={{ textAlign: 'center' }}>Select a Conversation</h2>
 					)}
 				</div>
 			</div>

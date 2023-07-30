@@ -195,7 +195,11 @@ export const SignUp: React.FC<SignUpProps> = ({ onChoiceUpdate }) => {
 						>
 							Sign Up
 						</Button>
-						<Grid container justifyContent='flex-end'>
+						<Grid
+							container
+							justifyContent='flex-end'
+							style={{ marginBottom: '30px' }}
+						>
 							<Grid item>
 								<Link variant='body2' onClick={() => onChoiceUpdate('signIn')}>
 									{'Already have an account? Sign in'}
@@ -204,7 +208,7 @@ export const SignUp: React.FC<SignUpProps> = ({ onChoiceUpdate }) => {
 						</Grid>
 					</Box>
 				</Box>
-				<Copyright sx={{ mt: 5 }} />
+				{/* <Copyright sx={{ mt: 5 }} /> */}
 			</Container>
 		</ThemeProvider>
 	);

@@ -1,6 +1,6 @@
 {
   "Version": 1,
-  "Hash": "vdNViab0K18spW8h6oOJHb0xo0iWLSI8/xxtgrhMq4w=",
+  "Hash": "+fY43F9NsKmdvfGgOhAdIza8cWC/sRBht98NZnj71DU=",
   "Source": "MyProject",
   "BasePath": "_content/MyProject",
   "Mode": "Default",
@@ -219,6 +219,23 @@
       "CopyToOutputDirectory": "Never",
       "CopyToPublishDirectory": "PreserveNewest",
       "OriginalItemSpec": "wwwroot/Uploads/8b98ae80-c702-455d-bf5e-bef6068ae4bd_test.txt"
+    },
+    {
+      "Identity": "/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/wwwroot/Uploads/9f60be31-6a32-4cd7-84f8-e13b4701a25c_test.txt",
+      "SourceId": "MyProject",
+      "SourceType": "Discovered",
+      "ContentRoot": "/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/wwwroot/",
+      "BasePath": "_content/MyProject",
+      "RelativePath": "Uploads/9f60be31-6a32-4cd7-84f8-e13b4701a25c_test.txt",
+      "AssetKind": "All",
+      "AssetMode": "All",
+      "AssetRole": "Primary",
+      "RelatedAsset": "",
+      "AssetTraitName": "",
+      "AssetTraitValue": "",
+      "CopyToOutputDirectory": "Never",
+      "CopyToPublishDirectory": "PreserveNewest",
+      "OriginalItemSpec": "wwwroot/Uploads/9f60be31-6a32-4cd7-84f8-e13b4701a25c_test.txt"
     },
     {
       "Identity": "/home/bui_quang_huy/Documents/Huy/Internship_and_Projects/FTPCA/FTPCA/server/wwwroot/Uploads/a95be82f-5b76-40ca-a397-4760b831bf62_test.txt",
