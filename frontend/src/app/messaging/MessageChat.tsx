@@ -9,6 +9,8 @@ import {
 	Button,
 	IconButton,
 	InputBase,
+	Menu,
+	MenuItem,
 	Modal,
 	Paper,
 	TextField,
@@ -48,15 +50,23 @@ interface Message {
 	senderusername: string | null;
 }
 
+interface Member {
+	id: number;
+	username: string;
+	name: string;
+}
+
 const MessageChat: React.FC = () => {
 	const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 	const [conversations, setConversations] = useState<Conversation[]>([]);
+	const [members, setMembers] = useState<Member[]>([]);
 	const [selectedConversation, setSelectedConversation] =
 		useState<Conversation | null>(null);
 	const [messages, setMessages] = useState<Message[]>([]);
 	const [newMessage, setNewMessage] = useState<string>('');
 	const [newChatName, setNewChatName] = useState<string>('');
 	const [showNewChatModal, setShowNewChatModal] = useState<boolean>(false);
+	const [showMemberModal, setShowMemberModal] = useState<boolean>(false);
 	const [searchedUsers, setSearchedUsers] = useState<UserInfo[]>([]);
 	const [selectedUsers, setSelectedUsers] = useState<UserInfo[]>([]);
 	const [searchQuery, setSearchQuery] = useState<string>('');
@@ -69,6 +79,24 @@ const MessageChat: React.FC = () => {
 	);
 	const [file, setFile] = useState<File | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+	const [selectedMembers, setSelectedMembers] = useState<any | null>([]);
+
+	const handleMemberClick = (member: any) => {
+		// Toggle selection for the clicked member
+		setSelectedMembers((prevSelected: any[]) =>
+			prevSelected.includes(member)
+				? prevSelected.filter((m) => m !== member)
+				: [...prevSelected, member]
+		);
+	};
+
+	const handleRemoveMember = (member: any) => {
+		setMembers((prevMembers) => prevMembers.filter((m) => m !== member));
+		setSelectedMembers((prevSelected: any[]) =>
+			prevSelected.filter((m: any) => m !== member)
+		);
+	};
 
 	// useEffect(() => {
 	// 	const newConnection = new signalR.HubConnectionBuilder()
@@ -162,6 +190,38 @@ const MessageChat: React.FC = () => {
 				});
 				console.log(parsedResults);
 				setConversations(parsedResults);
+			} else {
+				console.log('Error:', response.status);
+			}
+		} catch (error) {
+			console.log('An error occurred:', error);
+		}
+	};
+
+	const fetchMembers = async (convid: string) => {
+		try {
+			const response = await fetch(
+				`http://localhost:5169/getparticipant?convid=${convid}`,
+				{
+					method: 'GET',
+					headers: {
+						Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+					},
+				}
+			);
+
+			if (response.ok) {
+				const data: any = await response.json();
+				console.log('Get successful:', data);
+				const parsedResults: Member[] = data.data.map((item: any) => {
+					return {
+						id: Number(item[0]),
+						username: item[1],
+						name: item[2],
+					};
+				});
+				console.log(parsedResults);
+				setMembers(parsedResults);
 			} else {
 				console.log('Error:', response.status);
 			}
@@ -289,6 +349,27 @@ const MessageChat: React.FC = () => {
 		} catch (error) {
 			console.log('An error occurred:', error);
 		}
+	};
+
+	const [anchorEl, setAnchorEl] = useState(null);
+
+	const handleMenuClick = (event: any) => {
+		setAnchorEl(event.currentTarget);
+	};
+
+	const handleMenuItemClick = (item: string) => async () => {
+		console.log('Clicked item:', item);
+
+		// Perform specific actions based on the clicked item
+		if (item === 'Modify chat members') {
+			// Logic for "Modify chat members" action
+			await fetchMembers(String(selectedConversation?.id));
+			setShowMemberModal(true);
+		} else if (item === 'See group info') {
+			// Logic for "See group info" action
+		}
+
+		setAnchorEl(null);
 	};
 
 	const handleNewMessageChange = (
@@ -719,7 +800,7 @@ const MessageChat: React.FC = () => {
 							maxWidth: '100%',
 							flex: 1,
 							overflowY: 'auto',
-							height: 'calc(100vh - 50px)',
+							maxHeight: 'calc(80vh)',
 						}}
 					>
 						{conversations.map((conversation) => (
@@ -795,7 +876,7 @@ const MessageChat: React.FC = () => {
 						maxWidth: '100%',
 						flex: 1,
 						overflowY: 'auto',
-						height: 'calc(100vh - 50px)',
+						height: 'calc(100vh)',
 						backgroundImage:
 							'url("https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg")',
 						// backgroundSize: 'cover',
@@ -804,288 +885,316 @@ const MessageChat: React.FC = () => {
 					ref={messagesContainerRef}
 				>
 					{selectedConversation ? (
-						<div className='conversation-messages'>
-							<AppBar position='sticky' style={{ background: '#34568B' }}>
-								<Toolbar>
-									{selectedConversation && (
+						<>
+							<div className='conversation-messages'>
+								<AppBar position='sticky' style={{ background: '#009B77' }}>
+									<Toolbar>
+										{selectedConversation && (
+											<>
+												<div className='group-image'>
+													<img
+														// src={selectedConversation.groupImage}
+														src='./chat.jpg'
+														height='30px'
+														alt='Group Image'
+													/>
+												</div>
+												<Typography
+													variant='h6'
+													style={{ flexGrow: 1, marginLeft: '10px' }}
+												>
+													{selectedConversation.name}
+												</Typography>
+											</>
+										)}
+										<IconButton color='inherit'>
+											<SearchIcon />
+										</IconButton>
 										<>
-											<div className='group-image'>
-												<img
-													// src={selectedConversation.groupImage}
-													src='./chat.jpg'
-													height='30px'
-													alt='Group Image'
-												/>
-											</div>
-											<Typography
-												variant='h6'
-												style={{ flexGrow: 1, marginLeft: '10px' }}
+											<IconButton color='inherit' onClick={handleMenuClick}>
+												<MoreVertIcon />
+											</IconButton>
+											<Menu
+												anchorEl={anchorEl}
+												open={Boolean(anchorEl)}
+												onClose={() => setAnchorEl(null)}
 											>
-												{selectedConversation.name}
-											</Typography>
+												<MenuItem
+													onClick={handleMenuItemClick('Change group photo')}
+												>
+													Change group photo
+												</MenuItem>
+												<MenuItem
+													onClick={handleMenuItemClick('Modify chat members')}
+												>
+													Modify chat members
+												</MenuItem>
+												<MenuItem
+													onClick={handleMenuItemClick('See group info')}
+												>
+													See group info
+												</MenuItem>
+											</Menu>
 										</>
-									)}
-									<IconButton color='inherit'>
-										<SearchIcon />
-									</IconButton>
-									<IconButton color='inherit'>
-										<MoreVertIcon />
-									</IconButton>
-								</Toolbar>
-							</AppBar>
-							<div
-								style={{
-									backgroundColor: 'rgba(217, 217, 217,0.5)',
-									height: '100%',
-								}}
-							>
+									</Toolbar>
+								</AppBar>
 								<div
 									style={{
-										display: 'flex',
-										flexDirection: 'column',
+										backgroundColor: 'rgba(217, 217, 217,0.5)',
+										height: '100%',
 									}}
 								>
-									{messages.map((message, index) => {
-										const currentDate = new Date(
-											message.timestamp
-										).toLocaleDateString();
+									<div
+										style={{
+											display: 'flex',
+											flexDirection: 'column',
+										}}
+									>
+										{messages.map((message, index) => {
+											const currentDate = new Date(
+												message.timestamp
+											).toLocaleDateString();
 
-										// Get the date of the previous message (if it exists)
-										const prevMessage =
-											index > 0
-												? new Date(
-														messages[index - 1].timestamp
-												  ).toLocaleDateString()
-												: null;
+											// Get the date of the previous message (if it exists)
+											const prevMessage =
+												index > 0
+													? new Date(
+															messages[index - 1].timestamp
+													  ).toLocaleDateString()
+													: null;
 
-										// Check if the date of the current message is different from the previous message
-										const showDateHeader = prevMessage !== currentDate;
-										return (
-											<div
-												key={message.id}
-												className='message-container'
-												style={{
-													position: 'relative',
-													marginBottom:
-														index == messages.length - 1 ? '35px' : '10px',
-													marginTop: index == 0 ? '10px' : '0px',
-													maxWidth: '60%',
-													alignSelf:
-														userInfo?.userid === message.senderid
-															? 'flex-end'
-															: 'flex-start',
-													display: 'flex',
-													flexDirection: 'column',
-													marginLeft: '40px',
-												}}
-											>
-												{
-													// showDateHeader && (
-													// <div
-													// 	style={{
-													// 		fontSize: '0.8rem',
-													// 		color: '#616161',
-													// 		textAlign: 'center',
-													// 		backgroundColor: '#ECE5DD',
-													// 		padding: '5px',
-													// 		borderRadius: '5px',
-													// 		width: 'fit-content', // Make the date header width fit its content
-													// 		margin: '0 auto', // Center the date header horizontally
-													// 	}}
-													// >
-													// 	{/* Render the date here */}
-													// 	{currentDate}
-													// </div>
-													// )
-												}
-												{userInfo?.userid != message.senderid && (
-													<img
-														src='./default-ava.png'
-														height='40px'
-														alt='ava'
-														style={{
-															position: 'absolute',
-															// left: '-80px', // Adjust this value as needed
-															top: 0,
-															borderRadius: '50%', // Round shape
-														}}
-													/>
-												)}
-
+											// Check if the date of the current message is different from the previous message
+											const showDateHeader = prevMessage !== currentDate;
+											return (
 												<div
-													className='message'
+													key={message.id}
+													className='message-container'
 													style={{
-														backgroundColor:
+														position: 'relative',
+														marginBottom:
+															index == messages.length - 1 ? '80px' : '10px',
+														marginTop: index == 0 ? '10px' : '0px',
+														maxWidth: '60%',
+														alignSelf:
 															userInfo?.userid === message.senderid
-																? '#D7E6FF'
-																: 'white',
-														padding: '10px',
-														borderRadius: '5px',
-														marginLeft:
-															userInfo?.userid !== message.senderid
-																? '50px'
-																: '0',
-														marginRight:
-															userInfo?.userid == message.senderid
-																? '20px'
-																: '0',
-														minWidth: `${Math.min(
-															150,
-															message.content.length * 10
-														)}px`,
+																? 'flex-end'
+																: 'flex-start',
+														display: 'flex',
+														flexDirection: 'column',
+														marginLeft: '40px',
 													}}
 												>
-													<div className='message-sender'>
-														{userInfo?.userid !== message.senderid && (
-															<>
-																<span style={{ fontWeight: 'bold' }}>
-																	{message.sender}
-																</span>
-																<span
-																	style={{
-																		fontSize: '0.7rem',
-																		marginLeft: '5px',
-																		color: '#616161',
-																	}}
-																>
-																	{'@' + message.senderusername}
-																</span>
-															</>
-														)}
-													</div>
-													<div className='message-content'>
-														{message.fileid !== 'null' ? (
-															// Check if the file type is an image (you can customize this check based on actual image MIME types)
-															message.filetype?.startsWith('image/') ? (
-																<img
-																	src={`http://localhost:5169/Uploads/${
-																		message.filename
-																			? message.fileid + '_' + message.filename
-																			: ''
-																	}`}
-																	alt={message.filename ?? ''}
-																	style={{
-																		maxHeight: '300px',
-																		maxWidth: '100%',
-																	}} // Set appropriate height
-																/>
-															) : (
-																<a
-																	href={`http://localhost:5169/Uploads/${
-																		message.filename
-																			? message.fileid + '_' + message.filename
-																			: ''
-																	}`}
-																	download
-																	target='_blank'
-																	rel='noopener noreferrer'
-																>
-																	{message.filename}
-																</a>
-															)
-														) : (
-															message.content
-														)}
-													</div>
+													{
+														// showDateHeader && (
+														// <div
+														// 	style={{
+														// 		fontSize: '0.8rem',
+														// 		color: '#616161',
+														// 		textAlign: 'center',
+														// 		backgroundColor: '#ECE5DD',
+														// 		padding: '5px',
+														// 		borderRadius: '5px',
+														// 		width: 'fit-content', // Make the date header width fit its content
+														// 		margin: '0 auto', // Center the date header horizontally
+														// 	}}
+														// >
+														// 	{/* Render the date here */}
+														// 	{currentDate}
+														// </div>
+														// )
+													}
+													{userInfo?.userid != message.senderid && (
+														<img
+															src='./default-ava.png'
+															height='40px'
+															alt='ava'
+															style={{
+																position: 'absolute',
+																// left: '-80px', // Adjust this value as needed
+																top: 0,
+																borderRadius: '50%', // Round shape
+															}}
+														/>
+													)}
+
 													<div
-														className='message-timestamp'
+														className='message'
 														style={{
-															fontSize: '0.7rem',
-															// color: 'gray',
-															textAlign: 'right',
-															color: '#616161',
-															marginBottom: '-5px',
+															backgroundColor:
+																userInfo?.userid === message.senderid
+																	? '#D7E6FF'
+																	: 'white',
+															padding: '10px',
+															borderRadius: '5px',
+															marginLeft:
+																userInfo?.userid !== message.senderid
+																	? '50px'
+																	: '0',
+															marginRight:
+																userInfo?.userid == message.senderid
+																	? '20px'
+																	: '0',
+															minWidth: `${Math.min(
+																150,
+																message.content.length * 10
+															)}px`,
 														}}
 													>
-														{message.timestamp.split(' ')[1] +
-															' ' +
-															message.timestamp.split(' ')[2]}
-														{/* {message.timestamp} */}
+														<div className='message-sender'>
+															{userInfo?.userid !== message.senderid && (
+																<>
+																	<span style={{ fontWeight: 'bold' }}>
+																		{message.sender}
+																	</span>
+																	<span
+																		style={{
+																			fontSize: '0.7rem',
+																			marginLeft: '5px',
+																			color: '#616161',
+																		}}
+																	>
+																		{'@' + message.senderusername}
+																	</span>
+																</>
+															)}
+														</div>
+														<div className='message-content'>
+															{message.fileid !== 'null' ? (
+																// Check if the file type is an image (you can customize this check based on actual image MIME types)
+																message.filetype?.startsWith('image/') ? (
+																	<img
+																		src={`http://localhost:5169/Uploads/${
+																			message.filename
+																				? message.fileid +
+																				  '_' +
+																				  message.filename
+																				: ''
+																		}`}
+																		alt={message.filename ?? ''}
+																		style={{
+																			maxHeight: '300px',
+																			maxWidth: '100%',
+																		}} // Set appropriate height
+																	/>
+																) : (
+																	<a
+																		href={`http://localhost:5169/Uploads/${
+																			message.filename
+																				? message.fileid +
+																				  '_' +
+																				  message.filename
+																				: ''
+																		}`}
+																		download
+																		target='_blank'
+																		rel='noopener noreferrer'
+																	>
+																		{message.filename}
+																	</a>
+																)
+															) : (
+																message.content
+															)}
+														</div>
+														<div
+															className='message-timestamp'
+															style={{
+																fontSize: '0.7rem',
+																// color: 'gray',
+																textAlign: 'right',
+																color: '#616161',
+																marginBottom: '-5px',
+															}}
+														>
+															{message.timestamp.split(' ')[1] +
+																' ' +
+																message.timestamp.split(' ')[2]}
+															{/* {message.timestamp} */}
+														</div>
 													</div>
 												</div>
-											</div>
-										);
-									})}
+											);
+										})}
+									</div>
 								</div>
-							</div>
+								<div
+									className='message-input-container'
+									style={{
+										marginTop: '50px',
+										position: 'fixed',
+										// left: 0,
+										bottom: 0,
 
-							<div
-								className='message-input-container'
-								style={{
-									marginTop: '50px',
-									position: 'fixed',
-									// left: 0,
-									bottom: 0,
-
-									width: '75%',
-									backgroundColor: '#f5f5f5',
-									// padding: '10px',
-									display: 'flex',
-									flexDirection: 'row',
-									alignItems: 'center',
-									height: '60px',
-									borderRadius: '15px',
-								}}
-							>
-								{/* <div>
-									<input type='file' onChange={handleFileChange} />
-									<button onClick={handleUpload}>Upload File</button>
-								</div> */}
-
-								<div style={{ marginLeft: '10px' }}>
-									<input
-										ref={fileInputRef}
-										id='file-input'
-										type='file'
-										style={{ display: 'none' }}
-										onChange={handleFileChange}
-									/>
-									<label htmlFor='file-input'>
-										<IconButton component='span'>
-											<AddIcon fontSize='large' />
-										</IconButton>
-									</label>
-								</div>
-								<div>
-									<IconButton onClick={handleMoodClick}>
-										<Mood fontSize='medium' />
-									</IconButton>
-								</div>
-								{/* <input
-									type='text'
-									className='message-input'
-									placeholder='Type your message...'
-									value={newMessage}
-									onChange={(e) => setNewMessage(e.target.value)}
-								/>
-								<button onClick={handleSendMessage}>Send</button> */}
-								<div>
-									<TextField
-										type='text'
-										variant='outlined'
-										size='small'
-										placeholder='Type your message...'
-										value={newMessage}
-										onChange={(e) => setNewMessage(e.target.value)}
-										style={{
-											flex: 1,
-											width: '750px',
-											marginRight: '10px',
-											marginLeft: '20px',
-											borderRadius: '20px',
-											verticalAlign: '10px',
-										}}
-									/>
-								</div>
-								<Button
-									variant='contained'
-									color='primary'
-									onClick={handleSendMessage}
+										width: '75%',
+										backgroundColor: '#fafafa',
+										// padding: '10px',
+										display: 'flex',
+										flexDirection: 'row',
+										alignItems: 'center',
+										height: '60px',
+										borderRadius: '15px',
+									}}
 								>
-									<SendIcon />
-								</Button>
+									{/* <div>
+        <input type='file' onChange={handleFileChange} />
+        <button onClick={handleUpload}>Upload File</button>
+    </div> */}
+
+									<div style={{ marginLeft: '10px' }}>
+										<input
+											ref={fileInputRef}
+											id='file-input'
+											type='file'
+											style={{ display: 'none' }}
+											onChange={handleFileChange}
+										/>
+										<label htmlFor='file-input'>
+											<IconButton component='span'>
+												<AddIcon fontSize='large' />
+											</IconButton>
+										</label>
+									</div>
+									<div>
+										<IconButton onClick={handleMoodClick}>
+											<Mood fontSize='medium' />
+										</IconButton>
+									</div>
+									{/* <input
+        type='text'
+        className='message-input'
+        placeholder='Type your message...'
+        value={newMessage}
+        onChange={(e) => setNewMessage(e.target.value)}
+    />
+    <button onClick={handleSendMessage}>Send</button> */}
+									<div>
+										<TextField
+											type='text'
+											variant='outlined'
+											size='small'
+											placeholder='Type your message...'
+											value={newMessage}
+											onChange={(e) => setNewMessage(e.target.value)}
+											style={{
+												flex: 1,
+												width: '750px',
+												marginRight: '10px',
+												marginLeft: '20px',
+												borderRadius: '20px',
+												verticalAlign: '10px',
+											}}
+										/>
+									</div>
+									<Button
+										variant='contained'
+										color='primary'
+										onClick={handleSendMessage}
+									>
+										<SendIcon />
+									</Button>
+								</div>
 							</div>
-						</div>
+						</>
 					) : (
 						<h2 style={{ textAlign: 'center' }}>Select a Conversation</h2>
 					)}
@@ -1191,6 +1300,71 @@ const MessageChat: React.FC = () => {
 							>
 								<button onClick={handleCreateChat}>Create</button>
 								<button onClick={() => setShowNewChatModal(false)}>
+									Cancel
+								</button>
+							</div>
+						</Box>
+					</Modal>
+				)}
+			</div>
+			<div>
+				{showMemberModal && (
+					<Modal
+						open={showMemberModal}
+						onClose={() => setShowMemberModal(false)}
+						aria-labelledby='modal-modal-title'
+						aria-describedby='modal-modal-description'
+					>
+						<Box
+							sx={{
+								position: 'absolute',
+								top: '50%',
+								left: '50%',
+								transform: 'translate(-50%, -50%)',
+								width: 400,
+								bgcolor: 'background.paper',
+								boxShadow: 24,
+								p: 4,
+							}}
+						>
+							<h2>All Members of the Chat</h2>
+							<ul>
+								{members.map((member: any) => (
+									<li key={member.id}>
+										<div
+											style={{
+												display: 'flex',
+												flexDirection: 'row',
+												alignItems: 'center',
+												gap: '5px',
+											}}
+										>
+											<span>{member.name + ' (@' + member.username + ')'}</span>
+											{selectedMembers.includes(member.id) ? (
+												<IconButton
+													color='inherit'
+													onClick={() => handleMemberClick(member.id)}
+												>
+													<ClearIcon />
+												</IconButton>
+											) : (
+												<IconButton
+													color='inherit'
+													onClick={() => handleMemberClick(member.id)}
+												>
+													<CheckIcon />
+												</IconButton>
+											)}
+										</div>
+									</li>
+								))}
+							</ul>
+
+							<div
+								className='create-chat-buttons'
+								style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}
+							>
+								<button onClick={() => setShowMemberModal(false)}>
 									Cancel
 								</button>
 							</div>
