@@ -50,16 +50,10 @@ interface Message {
 	senderusername: string | null;
 }
 
-interface Member {
-	id: number;
-	username: string;
-	name: string;
-}
-
 const MessageChat: React.FC = () => {
 	const [userInfo, setUserInfo] = useState<UserInfo | null>(null);
 	const [conversations, setConversations] = useState<Conversation[]>([]);
-	const [members, setMembers] = useState<Member[]>([]);
+	const [members, setMembers] = useState<UserInfo[]>([]);
 	const [selectedConversation, setSelectedConversation] =
 		useState<Conversation | null>(null);
 	const [messages, setMessages] = useState<Message[]>([]);
@@ -68,8 +62,18 @@ const MessageChat: React.FC = () => {
 	const [showNewChatModal, setShowNewChatModal] = useState<boolean>(false);
 	const [showMemberModal, setShowMemberModal] = useState<boolean>(false);
 	const [searchedUsers, setSearchedUsers] = useState<UserInfo[]>([]);
+	const [searchedUsersMember, setSearchedUsersMember] = useState<UserInfo[]>(
+		[]
+	);
 	const [selectedUsers, setSelectedUsers] = useState<UserInfo[]>([]);
 	const [searchQuery, setSearchQuery] = useState<string>('');
+	const [selectedUsersMember, setSelectedUsersMember] = useState<UserInfo[]>(
+		[]
+	);
+	const [searchQueryMember, setSearchQueryMember] = useState<string>('');
+	const [removeExistingMember, setRemoveExistingMember] = useState<UserInfo[]>(
+		[]
+	);
 
 	const navigate = useNavigate();
 	const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -79,24 +83,6 @@ const MessageChat: React.FC = () => {
 	);
 	const [file, setFile] = useState<File | null>(null);
 	const fileInputRef = useRef<HTMLInputElement | null>(null);
-
-	const [selectedMembers, setSelectedMembers] = useState<any | null>([]);
-
-	const handleMemberClick = (member: any) => {
-		// Toggle selection for the clicked member
-		setSelectedMembers((prevSelected: any[]) =>
-			prevSelected.includes(member)
-				? prevSelected.filter((m) => m !== member)
-				: [...prevSelected, member]
-		);
-	};
-
-	const handleRemoveMember = (member: any) => {
-		setMembers((prevMembers) => prevMembers.filter((m) => m !== member));
-		setSelectedMembers((prevSelected: any[]) =>
-			prevSelected.filter((m: any) => m !== member)
-		);
-	};
 
 	// useEffect(() => {
 	// 	const newConnection = new signalR.HubConnectionBuilder()
@@ -213,11 +199,13 @@ const MessageChat: React.FC = () => {
 			if (response.ok) {
 				const data: any = await response.json();
 				console.log('Get successful:', data);
-				const parsedResults: Member[] = data.data.map((item: any) => {
+				const parsedResults: UserInfo[] = data.data.map((item: any) => {
 					return {
-						id: Number(item[0]),
+						userid: String(item[0]),
 						username: item[1],
 						name: item[2],
+						phoneNumber: '',
+						email: '',
 					};
 				});
 				console.log(parsedResults);
@@ -613,6 +601,12 @@ const MessageChat: React.FC = () => {
 		setSearchQuery(event.target.value);
 	};
 
+	const handleSearchQueryChangeMember = (
+		event: React.ChangeEvent<HTMLInputElement>
+	) => {
+		setSearchQueryMember(event.target.value);
+	};
+
 	const handleSearchUsers = async () => {
 		if (searchQuery.trim() !== '') {
 			try {
@@ -658,6 +652,67 @@ const MessageChat: React.FC = () => {
 		}
 	};
 
+	const handleSearchUsersMember = async () => {
+		if (searchQueryMember.trim() !== '') {
+			try {
+				const response = await fetch(
+					`http://localhost:5169/searchfriend?term=${searchQueryMember}`,
+					{
+						method: 'GET',
+						headers: {
+							Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+							'Access-Control-Allow-Origin': '*',
+						},
+					}
+				);
+
+				if (response.ok) {
+					const data: any = await response.json();
+					console.log('Get successful:', data);
+					const parsedResults: UserInfo[] = data.map((item: string) => {
+						const [userid, username, phoneNumber, name, email] =
+							item.split(',');
+						return {
+							userid: Number(userid),
+							username,
+							phoneNumber,
+							name,
+							email,
+						};
+					});
+					console.log(parsedResults);
+					console.log(members);
+					const filteredUsers = parsedResults.filter((user) => {
+						const isAlreadyMember = members.some(
+							(selectedUser) =>
+								String(selectedUser.userid) == String(user.userid)
+						);
+						const isAlreadySearchedMember = selectedUsersMember.some(
+							(selectedUser) =>
+								String(selectedUser.userid) == String(user.userid)
+						);
+						const isRemovingMember = removeExistingMember.some(
+							(selectedUser) =>
+								String(selectedUser.userid) == String(user.userid)
+						);
+						return !(
+							isAlreadyMember ||
+							isAlreadySearchedMember ||
+							isRemovingMember
+						);
+					});
+					console.log(filteredUsers);
+
+					setSearchedUsersMember(filteredUsers);
+				} else {
+					console.log('Error:', response.status);
+				}
+			} catch (error) {
+				console.log('An error occurred:', error);
+			}
+		}
+	};
+
 	const handleUserClick = (user: UserInfo) => {
 		setSelectedUsers((prevSelectedUsers) => [...prevSelectedUsers, user]);
 		setSearchedUsers([]);
@@ -668,6 +723,93 @@ const MessageChat: React.FC = () => {
 		setSelectedUsers((prevSelectedUsers) =>
 			prevSelectedUsers.filter((u) => u.userid !== user.userid)
 		);
+	};
+
+	const handleUserClickMember = (user: UserInfo) => {
+		setSelectedUsersMember((prevSelectedUsers) => [...prevSelectedUsers, user]);
+		setSearchedUsersMember([]);
+		setSearchQueryMember('');
+	};
+
+	const handleRemoveUserMember = (user: UserInfo) => {
+		setSelectedUsersMember((prevSelectedUsers) =>
+			prevSelectedUsers.filter((u) => u.userid !== user.userid)
+		);
+	};
+
+	const handleRemoveExistingMember = (user: UserInfo) => {
+		setRemoveExistingMember((prevSelectedUsers) => [
+			...prevSelectedUsers,
+			user,
+		]);
+		setMembers((prevSelectedUsers) =>
+			prevSelectedUsers.filter((u) => u.userid !== user.userid)
+		);
+	};
+
+	const handleSaveChangesMember = async () => {
+		const addingUserIds: string = selectedUsersMember
+			.map((user) => user.userid)
+			.join(',');
+		const removingUserIds: string = removeExistingMember
+			.map((user) => user.userid)
+			.join(',');
+
+		if (addingUserIds.length > 0) {
+			try {
+				const response = await fetch(
+					`http://localhost:5169/addparticipant?convid=${selectedConversation?.id}&participantList=${addingUserIds}`,
+					{
+						method: 'POST',
+						headers: {
+							Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+						},
+					}
+				);
+
+				if (response.status === 200) {
+					console.log('Adding members successfully');
+				} else {
+					console.log('Error:', response.status);
+				}
+			} catch (error) {
+				console.log('An error occurred:', error);
+			}
+		}
+
+		if (removingUserIds.length > 0) {
+			try {
+				const response = await fetch(
+					`http://localhost:5169/removeParticipant?convid=${selectedConversation?.id}&participantList=${removingUserIds}`,
+					{
+						method: 'POST',
+						headers: {
+							Authorization: `Bearer ${sessionStorage.getItem('jwtToken')}`,
+						},
+					}
+				);
+
+				if (response.status === 200) {
+					console.log('Removing members successfully');
+				} else {
+					console.log('Error:', response.status);
+				}
+			} catch (error) {
+				console.log('An error occurred:', error);
+			}
+		}
+		setSelectedUsersMember([]);
+		setRemoveExistingMember([]);
+		setSearchedUsersMember([]);
+
+		setShowMemberModal(false);
+	};
+
+	const handleCancelMember = () => {
+		setSelectedUsersMember([]);
+		setRemoveExistingMember([]);
+		setSearchedUsersMember([]);
+		setShowMemberModal(false);
 	};
 
 	const handleCreateChat = async () => {
@@ -1327,10 +1469,81 @@ const MessageChat: React.FC = () => {
 								p: 4,
 							}}
 						>
-							<h2>All Members of the Chat</h2>
+							<div className='search-users'>
+								<input
+									type='text'
+									placeholder='Search Users'
+									value={searchQueryMember}
+									onChange={handleSearchQueryChangeMember}
+									style={{
+										borderRadius: '5px',
+										height: '25px',
+										marginBottom: '10px',
+										marginRight: '5px',
+									}}
+								/>
+								<button onClick={handleSearchUsersMember}>Search</button>
+								{searchedUsersMember.length > 0 && (
+									<ul>
+										{searchedUsersMember.map((user) => (
+											<div
+												style={{
+													display: 'flex',
+													flexDirection: 'row',
+													alignItems: 'center',
+													gap: '5px',
+												}}
+											>
+												<li
+													className='li-create'
+													key={user.userid}
+													onClick={() => handleUserClickMember(user)}
+													style={{ cursor: 'pointer' }}
+												>
+													{user.username}
+												</li>
+
+												<IconButton
+													color='inherit'
+													onClick={() => handleUserClickMember(user)}
+													style={{}}
+												>
+													<CheckIcon />
+												</IconButton>
+											</div>
+										))}
+									</ul>
+								)}
+							</div>
+							{selectedUsersMember.length > 0 ? <h2>Added Members</h2> : <></>}
 							<ul>
-								{members.map((member: any) => (
-									<li key={member.id}>
+								{selectedUsersMember.map((user) => (
+									<li key={user.userid} style={{ marginBottom: '5px' }}>
+										<div
+											style={{
+												display: 'flex',
+												flexDirection: 'row',
+												gap: '5px',
+												alignItems: 'center',
+											}}
+										>
+											{user.username}
+											<IconButton
+												color='inherit'
+												onClick={() => handleRemoveUserMember(user)}
+												style={{}}
+											>
+												<ClearIcon />
+											</IconButton>
+										</div>
+									</li>
+								))}
+							</ul>
+							<h2>All Members of the Chat</h2>
+
+							<ul>
+								{members.map((member: UserInfo) => (
+									<li key={member.userid}>
 										<div
 											style={{
 												display: 'flex',
@@ -1340,7 +1553,7 @@ const MessageChat: React.FC = () => {
 											}}
 										>
 											<span>{member.name + ' (@' + member.username + ')'}</span>
-											{selectedMembers.includes(member.id) ? (
+											{/* {selectedMembers.includes(member.id) ? (
 												<IconButton
 													color='inherit'
 													onClick={() => handleMemberClick(member.id)}
@@ -1354,7 +1567,14 @@ const MessageChat: React.FC = () => {
 												>
 													<CheckIcon />
 												</IconButton>
-											)}
+											)} */}
+											<IconButton
+												color='inherit'
+												onClick={() => handleRemoveExistingMember(member)}
+												style={{}}
+											>
+												<ClearIcon />
+											</IconButton>
 										</div>
 									</li>
 								))}
@@ -1364,9 +1584,8 @@ const MessageChat: React.FC = () => {
 								className='create-chat-buttons'
 								style={{ display: 'flex', flexDirection: 'row', gap: '10px' }}
 							>
-								<button onClick={() => setShowMemberModal(false)}>
-									Cancel
-								</button>
+								<button onClick={handleSaveChangesMember}>Save Changes</button>
+								<button onClick={handleCancelMember}>Cancel</button>
 							</div>
 						</Box>
 					</Modal>

@@ -810,17 +810,30 @@ namespace DatabaseGroup
         }
 
 
-        public static async Task RemoveParticipant(string convid, int participantId)
+        public static async Task RemoveParticipants(string convid, string participantIds)
         {
             Database.connection = await DbConnection.GetDbConnection();
             try
             {
-                using var insertCommand = new MySqlCommand("DELETE FROM Conv_Parti WHERE userid = @userid", Database.connection);
+                // Split the participantIds string into individual participant IDs
+                string[] idsArray = participantIds.Split(',');
 
-                insertCommand.Parameters.AddWithValue("@userid", participantId);
+                // Use a loop to remove each participant by their ID
+                foreach (string id in idsArray)
+                {
+                    if (int.TryParse(id, out int participantId))
+                    {
+                        using var insertCommand = new MySqlCommand("DELETE FROM Conv_Parti WHERE userid = @userid", Database.connection);
 
-                await insertCommand.ExecuteNonQueryAsync();
+                        insertCommand.Parameters.AddWithValue("@userid", participantId);
 
+                        await insertCommand.ExecuteNonQueryAsync();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Invalid participant ID: " + id);
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -835,6 +848,7 @@ namespace DatabaseGroup
                 }
             }
         }
+
 
         public static async Task SendMessage(int senderid, string convid, string content, string fileId)
         {

@@ -124,14 +124,14 @@ namespace MessageControllerGroup
         [HttpPost]
         [Authorize]
         [Route("removeparticipant")]
-        public async Task<IActionResult> RemoveParticipant(string convid, int participantId)
+        public async Task<IActionResult> RemoveParticipants(string convid, string participantList)
         {
             // participantLists is the list of userid separated by comma
 
             try
             {
-                Console.WriteLine(convid + " remove " + participantId);
-                await Database.RemoveParticipant(convid, participantId);
+                Console.WriteLine(convid + " remove " + participantList);
+                await Database.RemoveParticipants(convid, participantList);
                 return Ok(new
                 {
                     Message = "Remove participants successfully",
